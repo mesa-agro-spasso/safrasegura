@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import { ClipboardList, Download, Copy, Check, ChevronDown, X } from "lucide-react";
+import { ClipboardList, Download, Copy, Check, ChevronDown, X, PlusCircle } from "lucide-react";
+import ManualOrderForm from "@/components/ManualOrderForm";
 import { formatBRL } from "@/lib/formatters";
 import type { OrderRecord } from "@/lib/orderRecord";
 import {
@@ -62,6 +63,7 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
   const [copiedOrder, setCopiedOrder] = useState(false);
   const [copiedConfirm, setCopiedConfirm] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [showManualForm, setShowManualForm] = useState(false);
 
   const refresh = useCallback(() => {
     setOrders(getAllOrders());
@@ -144,12 +146,18 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
               </span>
             )}
           </CollapsibleTrigger>
-          {orders.length > 0 && (
-            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={handleExport}>
-              <Download className="h-3.5 w-3.5" />
-              Exportar JSON
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => setShowManualForm(true)}>
+              <PlusCircle className="h-3.5 w-3.5" />
+              Cadastrar
             </Button>
-          )}
+            {orders.length > 0 && (
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={handleExport}>
+                <Download className="h-3.5 w-3.5" />
+                Exportar
+              </Button>
+            )}
+          </div>
         </div>
         <CollapsibleContent>
           <div className="rounded-b-lg border border-t-0 bg-card p-3">
@@ -333,6 +341,12 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
           </DialogContent>
         </Dialog>
       )}
+
+      <ManualOrderForm
+        open={showManualForm}
+        onClose={() => setShowManualForm(false)}
+        onSaved={refresh}
+      />
     </>
   );
 }
