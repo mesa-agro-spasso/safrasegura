@@ -59,6 +59,7 @@ export default function ManualOrderForm({ open, onClose, onSaved }: ManualOrderF
   const [notionalUsdManual, setNotionalUsdManual] = useState("");
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState<OrderRecord["status"]>("BROKER_CONFIRMED");
+  const [saving, setSaving] = useState(false);
 
   const isSoja = commodity === "soybean";
 
@@ -83,98 +84,106 @@ export default function ManualOrderForm({ open, onClose, onSaved }: ManualOrderF
     return volumeSacks && netPrice && ticker && paymentDate && saleDate;
   };
 
-  const handleSave = () => {
-    if (!isValid()) return;
+  const handleSave = async () => {
+    if (!isValid() || saving) return;
+    setSaving(true);
 
-    const vol = parseNum(volumeSacks);
-    const tons = Math.round((vol * 60) / 1000 * 100) / 100;
-    const storage = parseNum(storageCost);
-    const financial = parseNum(financialCost);
-    const brokerage = parseNum(brokerageCost);
-    const desk = parseNum(deskCost);
-    const totalCosts = storage + financial + brokerage + desk;
+    try {
+      const vol = parseNum(volumeSacks);
+      const tons = Math.round((vol * 60) / 1000 * 100) / 100;
+      const storage = parseNum(storageCost);
+      const financial = parseNum(financialCost);
+      const brokerage = parseNum(brokerageCost);
+      const desk = parseNum(deskCost);
+      const totalCosts = storage + financial + brokerage + desk;
 
-    const wh = WAREHOUSES.find((w) => w.id === warehouseId);
-    const seqNum = getNextSequentialNumber();
+      const wh = WAREHOUSES.find((w) => w.id === warehouseId);
+      const seqNum = await getNextSequentialNumber();
 
-    const contractsNum = parseNum(contracts);
+      const contractsNum = parseNum(contracts);
 
-    // Futures price: auto-detect cents vs USD for soybean
-    let normalizedFutures = parseNum(futuresPrice);
-    if (isSoja && normalizedFutures >= 100) {
-      normalizedFutures = normalizedFutures / 100;
-    }
+      // Futures price: auto-detect cents vs USD for soybean
+      let normalizedFutures = parseNum(futuresPrice);
+      if (isSoja && normalizedFutures >= 100) {
+        normalizedFutures = normalizedFutures / 100;
+      }
 
-    const fx = isSoja ? parseNum(exchangeRate) || null : null;
-    const finalNotional = parseNum(notionalUsdManual) || calculatedNotional;
+      const fx = isSoja ? parseNum(exchangeRate) || null : null;
+      const finalNotional = parseNum(notionalUsdManual) || calculatedNotional;
 
-    const legs: OrderRecord["legs"] = [];
-    if (contractsNum > 0) {
-      legs.push({
-        legType: "futures",
-        direction: "sell",
+      const legs: OrderRecord["legs"] = [];
+      if (contractsNum > 0) {
+        legs.push({
+          legType: "futures",
+          direction: "sell",
+          ticker,
+          contracts: contractsNum,
+        });
+      }
+      if (isSoja && finalNotional > 0 && fx) {
+        legs.push({
+          legType: "ndf",
+          direction: "sell",
+          notionalUsd: finalNotional,
+          ndfRate: fx,
+        });
+      }
+
+      const record: OrderRecord = {
+        id: crypto.randomUUID(),
+        sequentialNumber: seqNum,
+        operationId: null,
+        commodity,
+        exchange: isSoja ? "cbot" : "b3",
+        warehouseId,
+        warehouseDisplayName: wh?.name ?? warehouseId,
+        volumeSacks: vol,
+        volumeTons: tons,
+        volumeBushels: isSoja ? Math.round(vol * 60 / 27.2155 * 100) / 100 : null,
+        originationPriceNetBrl: parseNum(netPrice),
+        originationPriceGrossBrl: parseNum(grossPrice) || parseNum(netPrice) + totalCosts,
+        futuresPrice: normalizedFutures,
+        futuresPriceCurrency: isSoja ? "USD" : "BRL",
+        exchangeRate: fx,
+        targetBasisBrl: parseNum(targetBasis),
+        purchasedBasisBrl: parseNum(purchasedBasis),
+        breakEvenBasisBrl: parseNum(breakEvenBasis),
+        costs: {
+          storageBrl: storage,
+          financialBrl: financial,
+          brokerageBrl: brokerage,
+          deskCostBrl: desk,
+          totalBrl: totalCosts,
+        },
         ticker,
-        contracts: contractsNum,
-      });
-    }
-    if (isSoja && finalNotional > 0 && fx) {
-      legs.push({
-        legType: "ndf",
-        direction: "sell",
-        notionalUsd: finalNotional,
-        ndfRate: fx,
-      });
-    }
+        expDate: saleDate,
+        legs,
+        broker,
+        brokerAccount,
+        brokeragePerContract: parseNum(brokeragePerContract),
+        brokerageCurrency: isSoja ? "USD" : "BRL",
+        paymentDate,
+        saleDate,
+        orderMessage: "",
+        confirmationMessage: "",
+        status,
+        stonexConfirmationText: null,
+        stonexConfirmedAt: null,
+        generatedAt: new Date().toISOString(),
+        generatedByUserId: null,
+        notes: notes.trim() || "Cadastro manual",
+      };
 
-    const record: OrderRecord = {
-      id: crypto.randomUUID(),
-      sequentialNumber: seqNum,
-      operationId: null,
-      commodity,
-      exchange: isSoja ? "cbot" : "b3",
-      warehouseId,
-      warehouseDisplayName: wh?.name ?? warehouseId,
-      volumeSacks: vol,
-      volumeTons: tons,
-      volumeBushels: isSoja ? Math.round(vol * 60 / 27.2155 * 100) / 100 : null,
-      originationPriceNetBrl: parseNum(netPrice),
-      originationPriceGrossBrl: parseNum(grossPrice) || parseNum(netPrice) + totalCosts,
-      futuresPrice: normalizedFutures,
-      futuresPriceCurrency: isSoja ? "USD" : "BRL",
-      exchangeRate: fx,
-      targetBasisBrl: parseNum(targetBasis),
-      purchasedBasisBrl: parseNum(purchasedBasis),
-      breakEvenBasisBrl: parseNum(breakEvenBasis),
-      costs: {
-        storageBrl: storage,
-        financialBrl: financial,
-        brokerageBrl: brokerage,
-        deskCostBrl: desk,
-        totalBrl: totalCosts,
-      },
-      ticker,
-      expDate: saleDate,
-      legs,
-      broker,
-      brokerAccount,
-      brokeragePerContract: parseNum(brokeragePerContract),
-      brokerageCurrency: isSoja ? "USD" : "BRL",
-      paymentDate,
-      saleDate,
-      orderMessage: "",
-      confirmationMessage: "",
-      status,
-      stonexConfirmationText: null,
-      stonexConfirmedAt: null,
-      generatedAt: new Date().toISOString(),
-      generatedByUserId: null,
-      notes: notes.trim() || "Cadastro manual",
-    };
-
-    saveOrder(record);
-    toast({ title: `Ordem #${seqNum} cadastrada`, description: `${wh?.name ?? warehouseId} — ${vol} sacas` });
-    onSaved();
-    onClose();
+      await saveOrder(record);
+      toast({ title: `Ordem #${seqNum} cadastrada`, description: `${wh?.name ?? warehouseId} — ${vol} sacas` });
+      onSaved();
+      onClose();
+    } catch (err) {
+      console.error("Failed to save order", err);
+      toast({ title: "Erro ao salvar ordem", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -316,9 +325,9 @@ export default function ManualOrderForm({ open, onClose, onSaved }: ManualOrderF
             />
           </div>
 
-          <Button onClick={handleSave} className="w-full gap-2" size="lg" disabled={!isValid()}>
+          <Button onClick={handleSave} className="w-full gap-2" size="lg" disabled={!isValid() || saving}>
             <PlusCircle className="h-4 w-4" />
-            Salvar Ordem
+            {saving ? "Salvando..." : "Salvar Ordem"}
           </Button>
         </div>
       </DialogContent>

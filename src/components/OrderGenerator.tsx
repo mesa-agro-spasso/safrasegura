@@ -36,6 +36,7 @@ export default function OrderGenerator({
   const [confirmText, setConfirmText] = useState("");
   const [copiedOrder, setCopiedOrder] = useState(false);
   const [copiedConfirm, setCopiedConfirm] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const handleCopy = async (text: string, type: "order" | "confirm") => {
     try {
@@ -50,87 +51,94 @@ export default function OrderGenerator({
     } catch {}
   };
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     const volumeSacks = parseFloat(volume);
-    if (!volumeSacks || volumeSacks <= 0) return;
+    if (!volumeSacks || volumeSacks <= 0 || saving) return;
+    setSaving(true);
 
-    const order = buildHedgeOrder({
-      engineResult: result.engineResult,
-      volumeSacks,
-      commodity: result.commodity as "soybean" | "corn",
-      exchange: isSoja ? "cbot" : "b3",
-      brokeragePerContract: isSoja ? 15.0 : 12.0,
-      broker: "stonex",
-      brokerAccount: contaBroker,
-      paymentDate: result.paymentDate,
-      saleDate: result.saleDate,
-      ndfTableVersionId: new Date().toISOString(),
-      ndfMaturity: isSoja ? result.saleDate : undefined,
-    });
+    try {
+      const order = buildHedgeOrder({
+        engineResult: result.engineResult,
+        volumeSacks,
+        commodity: result.commodity as "soybean" | "corn",
+        exchange: isSoja ? "cbot" : "b3",
+        brokeragePerContract: isSoja ? 15.0 : 12.0,
+        broker: "stonex",
+        brokerAccount: contaBroker,
+        paymentDate: result.paymentDate,
+        saleDate: result.saleDate,
+        ndfTableVersionId: new Date().toISOString(),
+        ndfMaturity: isSoja ? result.saleDate : undefined,
+      });
 
-    // Build and save OrderRecord
-    const seqNum = getNextSequentialNumber();
-    const engineResult = result.engineResult;
-    const record: OrderRecord = {
-      id: crypto.randomUUID(),
-      sequentialNumber: seqNum,
-      operationId: null,
-      commodity: result.commodity as "soybean" | "corn",
-      exchange: isSoja ? "cbot" : "b3",
-      warehouseId: result.warehouseId,
-      warehouseDisplayName: result.displayName,
-      volumeSacks: order.volumeSacks,
-      volumeTons: order.volumeTons,
-      volumeBushels: order.volumeBushels,
-      originationPriceNetBrl: result.netPriceBrl,
-      originationPriceGrossBrl: result.grossPriceBrl,
-      futuresPrice: order.futuresPrice,
-      futuresPriceCurrency: order.futuresPriceCurrency as "USD" | "BRL",
-      exchangeRate: order.exchangeRate,
-      targetBasisBrl: result.targetBasisBrl,
-      purchasedBasisBrl: result.purchasedBasisBrl,
-      breakEvenBasisBrl: result.breakEvenBasisBrl,
-      costs: { ...result.costs },
-      ticker: "ticker" in engineResult ? (engineResult as any).ticker : "",
-      expDate: result.saleDate,
-      legs: order.legs.map((l) => ({
-        legType: l.legType,
-        direction: l.direction,
-        ticker: l.ticker,
-        contracts: l.contracts,
-        volumeUnits: l.volumeUnits,
-        unitLabel: l.unitLabel,
-        notionalUsd: l.notionalUsd,
-        ndfRate: l.ndfRate,
-        ndfMaturity: l.ndfMaturity,
-      })),
-      broker: order.broker,
-      brokerAccount: order.brokerAccount,
-      brokeragePerContract: order.brokeragePerContract,
-      brokerageCurrency: order.brokerageCurrency as "USD" | "BRL",
-      paymentDate: order.paymentDate,
-      saleDate: order.saleDate,
-      orderMessage: order.orderMessage,
-      confirmationMessage: order.confirmationMessage,
-      status: "GENERATED",
-      stonexConfirmationText: null,
-      stonexConfirmedAt: null,
-      generatedAt: new Date().toISOString(),
-      generatedByUserId: null,
-      notes: null,
-    };
+      const seqNum = await getNextSequentialNumber();
+      const engineResult = result.engineResult;
+      const record: OrderRecord = {
+        id: crypto.randomUUID(),
+        sequentialNumber: seqNum,
+        operationId: null,
+        commodity: result.commodity as "soybean" | "corn",
+        exchange: isSoja ? "cbot" : "b3",
+        warehouseId: result.warehouseId,
+        warehouseDisplayName: result.displayName,
+        volumeSacks: order.volumeSacks,
+        volumeTons: order.volumeTons,
+        volumeBushels: order.volumeBushels,
+        originationPriceNetBrl: result.netPriceBrl,
+        originationPriceGrossBrl: result.grossPriceBrl,
+        futuresPrice: order.futuresPrice,
+        futuresPriceCurrency: order.futuresPriceCurrency as "USD" | "BRL",
+        exchangeRate: order.exchangeRate,
+        targetBasisBrl: result.targetBasisBrl,
+        purchasedBasisBrl: result.purchasedBasisBrl,
+        breakEvenBasisBrl: result.breakEvenBasisBrl,
+        costs: { ...result.costs },
+        ticker: "ticker" in engineResult ? (engineResult as any).ticker : "",
+        expDate: result.saleDate,
+        legs: order.legs.map((l) => ({
+          legType: l.legType,
+          direction: l.direction,
+          ticker: l.ticker,
+          contracts: l.contracts,
+          volumeUnits: l.volumeUnits,
+          unitLabel: l.unitLabel,
+          notionalUsd: l.notionalUsd,
+          ndfRate: l.ndfRate,
+          ndfMaturity: l.ndfMaturity,
+        })),
+        broker: order.broker,
+        brokerAccount: order.brokerAccount,
+        brokeragePerContract: order.brokeragePerContract,
+        brokerageCurrency: order.brokerageCurrency as "USD" | "BRL",
+        paymentDate: order.paymentDate,
+        saleDate: order.saleDate,
+        orderMessage: order.orderMessage,
+        confirmationMessage: order.confirmationMessage,
+        status: "GENERATED",
+        stonexConfirmationText: null,
+        stonexConfirmedAt: null,
+        generatedAt: new Date().toISOString(),
+        generatedByUserId: null,
+        notes: null,
+      };
 
-    saveOrder(record);
+      await saveOrder(record);
 
-    toast({
-      title: `Ordem #${seqNum} registrada`,
-      description: `${result.displayName} — ${volumeSacks} sacas`,
-    });
+      toast({
+        title: `Ordem #${seqNum} registrada`,
+        description: `${result.displayName} — ${volumeSacks} sacas`,
+      });
 
-    setOrderText(order.orderMessage);
-    setConfirmText(order.confirmationMessage);
-    setGenerated(true);
-    onOrderSaved?.();
+      setOrderText(order.orderMessage);
+      setConfirmText(order.confirmationMessage);
+      setGenerated(true);
+      onOrderSaved?.();
+    } catch (err) {
+      console.error("Failed to save order", err);
+      toast({ title: "Erro ao salvar ordem", variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleClose = () => {
@@ -174,9 +182,9 @@ export default function OrderGenerator({
           </div>
 
           {!generated ? (
-            <Button onClick={handleGenerate} className="w-full gap-2" size="lg" disabled={!volume || parseFloat(volume) <= 0}>
+            <Button onClick={handleGenerate} className="w-full gap-2" size="lg" disabled={!volume || parseFloat(volume) <= 0 || saving}>
               <Send className="h-4 w-4" />
-              Gerar Ordem
+              {saving ? "Gerando..." : "Gerar Ordem"}
             </Button>
           ) : (
             <div className="space-y-3">
