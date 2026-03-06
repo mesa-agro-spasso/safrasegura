@@ -5,6 +5,7 @@ import type { MarketDataValues } from "@/components/MarketData";
 import PriceTable from "@/components/PriceTable";
 import DetailModal from "@/components/DetailModal";
 import OrderGenerator from "@/components/OrderGenerator";
+import OrderHistory from "@/components/OrderHistory";
 import ConfigPanel, {
   getDefaultConfig,
   buildWarehousesFromState,
@@ -23,6 +24,7 @@ const Index = () => {
   const [results, setResults] = useState<PricingResult[]>([]);
   const [selectedResult, setSelectedResult] = useState<PricingResult | null>(null);
   const [showOrder, setShowOrder] = useState(false);
+  const [orderHistoryKey, setOrderHistoryKey] = useState(0);
 
   const handleGenerate = (values: MarketDataValues) => {
     setMarketValues(values);
@@ -98,6 +100,8 @@ const Index = () => {
             onCellClick={handleCellClick}
           />
         )}
+
+        <OrderHistory refreshKey={orderHistoryKey} />
       </main>
 
       {selectedResult && !showOrder && (
@@ -114,6 +118,7 @@ const Index = () => {
           open={true}
           onClose={() => { setShowOrder(false); setSelectedResult(null); }}
           result={selectedResult}
+          onOrderSaved={() => setOrderHistoryKey((k) => k + 1)}
         />
       )}
     </div>

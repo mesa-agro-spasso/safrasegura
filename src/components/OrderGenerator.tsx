@@ -11,17 +11,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { buildHedgeOrder, type PricingResult } from "@/lib/pricing-index";
+import { saveOrder, getNextSequentialNumber } from "@/lib/orderStorage";
+import type { OrderRecord } from "@/lib/orderRecord";
+import { toast } from "@/hooks/use-toast";
 
 interface OrderGeneratorProps {
   open: boolean;
   onClose: () => void;
   result: PricingResult;
+  onOrderSaved?: () => void;
 }
 
 export default function OrderGenerator({
   open,
   onClose,
   result,
+  onOrderSaved,
 }: OrderGeneratorProps) {
   const isSoja = result.commodity === "soybean";
   const [volume, setVolume] = useState("");
@@ -42,9 +47,7 @@ export default function OrderGenerator({
         setCopiedConfirm(true);
         setTimeout(() => setCopiedConfirm(false), 2000);
       }
-    } catch {
-      // fallback silently
-    }
+    } catch {}
   };
 
   const handleGenerate = () => {
@@ -65,9 +68,69 @@ export default function OrderGenerator({
       ndfMaturity: isSoja ? result.saleDate : undefined,
     });
 
+    // Build and save OrderRecord
+    const seqNum = getNextSequentialNumber();
+    const engineResult = result.engineResult;
+    const record: OrderRecord = {
+      id: crypto.randomUUID(),
+      sequentialNumber: seqNum,
+      operationId: null,
+      commodity: result.commodity as "soybean" | "corn",
+      exchange: isSoja ? "cbot" : "b3",
+      warehouseId: result.warehouseId,
+      warehouseDisplayName: result.displayName,
+      volumeSacks: order.volumeSacks,
+      volumeTons: order.volumeTons,
+      volumeBushels: order.volumeBushels,
+      originationPriceNetBrl: result.netPriceBrl,
+      originationPriceGrossBrl: result.grossPriceBrl,
+      futuresPrice: order.futuresPrice,
+      futuresPriceCurrency: order.futuresPriceCurrency as "USD" | "BRL",
+      exchangeRate: order.exchangeRate,
+      targetBasisBrl: result.targetBasisBrl,
+      purchasedBasisBrl: result.purchasedBasisBrl,
+      breakEvenBasisBrl: result.breakEvenBasisBrl,
+      costs: { ...result.costs },
+      ticker: "ticker" in engineResult ? (engineResult as any).ticker : "",
+      expDate: result.saleDate,
+      legs: order.legs.map((l) => ({
+        legType: l.legType,
+        direction: l.direction,
+        ticker: l.ticker,
+        contracts: l.contracts,
+        volumeUnits: l.volumeUnits,
+        unitLabel: l.unitLabel,
+        notionalUsd: l.notionalUsd,
+        ndfRate: l.ndfRate,
+        ndfMaturity: l.ndfMaturity,
+      })),
+      broker: order.broker,
+      brokerAccount: order.brokerAccount,
+      brokeragePerContract: order.brokeragePerContract,
+      brokerageCurrency: order.brokerageCurrency as "USD" | "BRL",
+      paymentDate: order.paymentDate,
+      saleDate: order.saleDate,
+      orderMessage: order.orderMessage,
+      confirmationMessage: order.confirmationMessage,
+      status: "GENERATED",
+      stonexConfirmationText: null,
+      stonexConfirmedAt: null,
+      generatedAt: new Date().toISOString(),
+      generatedByUserId: null,
+      notes: null,
+    };
+
+    saveOrder(record);
+
+    toast({
+      title: `Ordem #${seqNum} registrada`,
+      description: `${result.displayName} — ${volumeSacks} sacas`,
+    });
+
     setOrderText(order.orderMessage);
     setConfirmText(order.confirmationMessage);
     setGenerated(true);
+    onOrderSaved?.();
   };
 
   const handleClose = () => {
