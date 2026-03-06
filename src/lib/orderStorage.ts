@@ -71,6 +71,11 @@ export function updateOrderNotes(id: string, notes: string): void {
   }
 }
 
+export function permanentlyDeleteOrder(id: string): void {
+  const all = readAll().filter((r) => r.id !== id);
+  writeAll(all);
+}
+
 export function exportOrdersToJson(): string {
   return JSON.stringify(getAllOrders(), null, 2);
 }
