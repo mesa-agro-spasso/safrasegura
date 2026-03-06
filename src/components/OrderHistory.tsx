@@ -238,6 +238,15 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
                     <span className="font-mono">{selected.exchangeRate.toFixed(4)}</span>
                   </>
                 )}
+                {(() => {
+                  const ndfLeg = selected.legs.find((l) => l.legType === "ndf");
+                  return ndfLeg?.notionalUsd ? (
+                    <>
+                      <span className="text-muted-foreground">Qtd Dólar</span>
+                      <span className="font-mono">US$ {ndfLeg.notionalUsd.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                    </>
+                  ) : null;
+                })()}
                 <span className="text-muted-foreground">Basis comprado</span>
                 <span className="font-mono">{formatBRL(selected.purchasedBasisBrl)}</span>
                 <span className="text-muted-foreground">Basis breakeven</span>
