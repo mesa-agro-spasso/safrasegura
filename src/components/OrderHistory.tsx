@@ -9,6 +9,7 @@ import {
   updateStonexConfirmation,
   deleteOrder,
   exportOrdersToJson,
+  updateOrderNotes,
 } from "@/lib/orderStorage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
