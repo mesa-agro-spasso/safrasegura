@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useEffect } from "react";
 import { ClipboardList, Download, Copy, Check, ChevronDown, X, PlusCircle, Trash2, Filter } from "lucide-react";
 import ManualOrderForm from "@/components/ManualOrderForm";
 import { formatBRL } from "@/lib/formatters";
@@ -68,7 +68,7 @@ function formatDateTimeBR(iso: string): string {
 }
 
 export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
-  const [orders, setOrders] = useState<OrderRecord[]>(() => getAllOrders());
+  const [orders, setOrders] = useState<OrderRecord[]>([]);
   const [selected, setSelected] = useState<OrderRecord | null>(null);
   const [confirmText, setConfirmText] = useState("");
   const [copiedOrder, setCopiedOrder] = useState(false);
@@ -84,17 +84,19 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
   const [filterDateFrom, setFilterDateFrom] = useState("");
   const [filterDateTo, setFilterDateTo] = useState("");
 
-  const refresh = useCallback(() => {
-    setOrders(getAllOrders());
+  const refresh = useCallback(async () => {
+    try {
+      const data = await getAllOrders();
+      setOrders(data);
+    } catch (err) {
+      console.error("Failed to load orders", err);
+    }
   }, []);
 
-  // refresh when parent signals new order
-  useState(() => { refresh(); });
-  const [lastKey, setLastKey] = useState(refreshKey);
-  if (refreshKey !== lastKey) {
-    setLastKey(refreshKey);
-    setOrders(getAllOrders());
-  }
+  // Load on mount + when refreshKey changes
+  useEffect(() => {
+    refresh();
+  }, [refresh, refreshKey]);
 
   const filteredOrders = useMemo(() => {
     return orders.filter((o) => {
@@ -129,35 +131,35 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
     } catch {}
   };
 
-  const handleMarkSent = (id: string) => {
-    updateOrderStatus(id, "SENT");
-    refresh();
-    setSelected(orders.find((o) => o.id === id) ?? null);
+  const handleMarkSent = async (id: string) => {
+    await updateOrderStatus(id, "SENT");
+    await refresh();
+    setSelected((prev) => prev ? { ...prev, status: "SENT" } : null);
   };
 
-  const handleConfirmStonex = (id: string) => {
+  const handleConfirmStonex = async (id: string) => {
     if (!confirmText.trim()) return;
-    updateStonexConfirmation(id, confirmText.trim());
+    await updateStonexConfirmation(id, confirmText.trim());
     setConfirmText("");
-    refresh();
-    setSelected(orders.find((o) => o.id === id) ?? null);
+    await refresh();
+    setSelected((prev) => prev ? { ...prev, status: "BROKER_CONFIRMED", stonexConfirmationText: confirmText.trim(), stonexConfirmedAt: new Date().toISOString() } : null);
   };
 
-  const handleCancel = (id: string) => {
-    deleteOrder(id);
-    refresh();
-    setSelected(orders.find((o) => o.id === id) ?? null);
+  const handleCancel = async (id: string) => {
+    await deleteOrder(id);
+    await refresh();
+    setSelected((prev) => prev ? { ...prev, status: "CANCELLED" } : null);
   };
 
-  const handlePermanentDelete = (id: string) => {
-    permanentlyDeleteOrder(id);
+  const handlePermanentDelete = async (id: string) => {
+    await permanentlyDeleteOrder(id);
     setSelected(null);
-    refresh();
+    await refresh();
     toast({ title: "Ordem apagada permanentemente" });
   };
 
-  const handleExport = () => {
-    const json = exportOrdersToJson();
+  const handleExport = async () => {
+    const json = await exportOrdersToJson();
     const blob = new Blob([json], { type: "application/json" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -428,9 +430,9 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
                     size="sm"
                     variant="outline"
                     className="gap-1"
-                    onClick={() => {
-                      updateOrderNotes(selected.id, editNotes);
-                      refresh();
+                    onClick={async () => {
+                      await updateOrderNotes(selected.id, editNotes);
+                      await refresh();
                       setSelected({ ...selected, notes: editNotes });
                       toast({ title: "Observações salvas" });
                     }}
