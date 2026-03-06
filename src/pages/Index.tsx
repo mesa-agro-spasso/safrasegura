@@ -63,7 +63,8 @@ const Index = () => {
     setSelectedResult(result);
   };
 
-  const handleGenerateOrder = () => {
+  const handleGenerateOrder = (adjusted: PricingResult) => {
+    setSelectedResult(adjusted);
     setShowOrder(true);
   };
 
