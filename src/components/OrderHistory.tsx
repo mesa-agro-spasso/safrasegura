@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { ClipboardList, Download, Copy, Check, ChevronDown, X, PlusCircle } from "lucide-react";
 import ManualOrderForm from "@/components/ManualOrderForm";
 import { formatBRL } from "@/lib/formatters";
+import { toast } from "@/hooks/use-toast";
 import type { OrderRecord } from "@/lib/orderRecord";
 import {
   getAllOrders,
