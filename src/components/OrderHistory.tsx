@@ -172,7 +172,7 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
                 {orders.map((o) => (
                   <button
                     key={o.id}
-                    onClick={() => { setSelected(o); setCopiedOrder(false); setCopiedConfirm(false); setConfirmText(""); }}
+                    onClick={() => { setSelected(o); setCopiedOrder(false); setCopiedConfirm(false); setConfirmText(""); setEditNotes(o.notes ?? ""); }}
                     className="w-full rounded-lg border bg-background p-3 text-left transition-colors hover:bg-muted/50"
                   >
                     <div className="flex items-start justify-between gap-2">
