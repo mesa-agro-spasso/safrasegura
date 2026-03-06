@@ -82,8 +82,8 @@ export default function PriceTable({
       {/* MILHO */}
       <div className="rounded-lg border bg-card overflow-hidden">
         <div className="flex items-center gap-2 border-b px-4 py-2.5">
-          <Wheat className="h-4 w-4 text-yellow-400" />
-          <span className="text-sm font-semibold text-yellow-400">MILHO</span>
+          <Wheat className="h-4 w-4 text-grain" />
+          <span className="text-sm font-semibold text-grain">MILHO</span>
           <span className="ml-auto text-xs text-muted-foreground">
             {contratoMilho} · B3 {formatBRL(b3Milho)}
           </span>
