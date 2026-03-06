@@ -146,12 +146,18 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
               </span>
             )}
           </CollapsibleTrigger>
-          {orders.length > 0 && (
-            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={handleExport}>
-              <Download className="h-3.5 w-3.5" />
-              Exportar JSON
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={() => setShowManualForm(true)}>
+              <PlusCircle className="h-3.5 w-3.5" />
+              Cadastrar
             </Button>
-          )}
+            {orders.length > 0 && (
+              <Button variant="ghost" size="sm" className="h-7 gap-1 text-xs" onClick={handleExport}>
+                <Download className="h-3.5 w-3.5" />
+                Exportar
+              </Button>
+            )}
+          </div>
         </div>
         <CollapsibleContent>
           <div className="rounded-b-lg border border-t-0 bg-card p-3">
