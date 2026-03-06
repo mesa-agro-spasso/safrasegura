@@ -299,6 +299,32 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
                 </div>
               )}
 
+              {/* Notes */}
+              <div className="space-y-1">
+                <span className="text-xs font-semibold text-muted-foreground">Observações</span>
+                <Textarea
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  placeholder="Sem observações"
+                  className="h-16 resize-none text-sm"
+                />
+                {editNotes !== (selected.notes ?? "") && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1"
+                    onClick={() => {
+                      updateOrderNotes(selected.id, editNotes);
+                      refresh();
+                      setSelected({ ...selected, notes: editNotes });
+                      toast({ title: "Observações salvas" });
+                    }}
+                  >
+                    Salvar observações
+                  </Button>
+                )}
+              </div>
+
               <Separator />
 
               {/* Actions */}
