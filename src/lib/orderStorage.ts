@@ -62,6 +62,15 @@ export function deleteOrder(id: string): void {
   updateOrderStatus(id, "CANCELLED");
 }
 
+export function updateOrderNotes(id: string, notes: string): void {
+  const all = readAll();
+  const idx = all.findIndex((r) => r.id === id);
+  if (idx >= 0) {
+    all[idx].notes = notes;
+    writeAll(all);
+  }
+}
+
 export function exportOrdersToJson(): string {
   return JSON.stringify(getAllOrders(), null, 2);
 }

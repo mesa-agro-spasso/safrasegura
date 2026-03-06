@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { PlusCircle } from "lucide-react";
 import {
   Dialog,
@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -31,8 +32,6 @@ const WAREHOUSES = [
   { id: "confresa", name: "Confresa" },
   { id: "matupa", name: "Matupá" },
   { id: "alta_floresta", name: "Alta Floresta" },
-  { id: "guarantã", name: "Guarantã do Norte" },
-  { id: "novo_mundo", name: "Novo Mundo" },
 ];
 
 export default function ManualOrderForm({ open, onClose, onSaved }: ManualOrderFormProps) {
@@ -57,15 +56,28 @@ export default function ManualOrderForm({ open, onClose, onSaved }: ManualOrderF
   const [paymentDate, setPaymentDate] = useState("");
   const [saleDate, setSaleDate] = useState("");
   const [contracts, setContracts] = useState("");
+  const [notionalUsdManual, setNotionalUsdManual] = useState("");
+  const [notes, setNotes] = useState("");
   const [status, setStatus] = useState<OrderRecord["status"]>("BROKER_CONFIRMED");
 
   const isSoja = commodity === "soybean";
-  const exchange = isSoja ? "cbot" : "b3";
 
   const parseNum = (v: string) => {
     const n = parseFloat(v.replace(",", "."));
     return isNaN(n) ? 0 : n;
   };
+
+  const calculatedNotional = useMemo(() => {
+    const net = parseNum(netPrice);
+    const vol = parseNum(volumeSacks);
+    const fx = parseNum(exchangeRate);
+    if (net > 0 && vol > 0 && fx > 0) {
+      return Math.round((net * vol) / fx * 100) / 100;
+    }
+    return 0;
+  }, [netPrice, volumeSacks, exchangeRate]);
+
+  const notionalDisplay = notionalUsdManual || (calculatedNotional > 0 ? calculatedNotional.toFixed(2) : "");
 
   const isValid = () => {
     return volumeSacks && netPrice && ticker && paymentDate && saleDate;
@@ -87,12 +99,39 @@ export default function ManualOrderForm({ open, onClose, onSaved }: ManualOrderF
 
     const contractsNum = parseNum(contracts);
 
+    // Futures price: auto-detect cents vs USD for soybean
+    let normalizedFutures = parseNum(futuresPrice);
+    if (isSoja && normalizedFutures >= 100) {
+      normalizedFutures = normalizedFutures / 100;
+    }
+
+    const fx = isSoja ? parseNum(exchangeRate) || null : null;
+    const finalNotional = parseNum(notionalUsdManual) || calculatedNotional;
+
+    const legs: OrderRecord["legs"] = [];
+    if (contractsNum > 0) {
+      legs.push({
+        legType: "futures",
+        direction: "sell",
+        ticker,
+        contracts: contractsNum,
+      });
+    }
+    if (isSoja && finalNotional > 0 && fx) {
+      legs.push({
+        legType: "ndf",
+        direction: "sell",
+        notionalUsd: finalNotional,
+        ndfRate: fx,
+      });
+    }
+
     const record: OrderRecord = {
       id: crypto.randomUUID(),
       sequentialNumber: seqNum,
       operationId: null,
       commodity,
-      exchange,
+      exchange: isSoja ? "cbot" : "b3",
       warehouseId,
       warehouseDisplayName: wh?.name ?? warehouseId,
       volumeSacks: vol,
@@ -100,9 +139,9 @@ export default function ManualOrderForm({ open, onClose, onSaved }: ManualOrderF
       volumeBushels: isSoja ? Math.round(vol * 60 / 27.2155 * 100) / 100 : null,
       originationPriceNetBrl: parseNum(netPrice),
       originationPriceGrossBrl: parseNum(grossPrice) || parseNum(netPrice) + totalCosts,
-      futuresPrice: parseNum(futuresPrice),
+      futuresPrice: normalizedFutures,
       futuresPriceCurrency: isSoja ? "USD" : "BRL",
-      exchangeRate: isSoja ? parseNum(exchangeRate) || null : null,
+      exchangeRate: fx,
       targetBasisBrl: parseNum(targetBasis),
       purchasedBasisBrl: parseNum(purchasedBasis),
       breakEvenBasisBrl: parseNum(breakEvenBasis),
@@ -115,14 +154,7 @@ export default function ManualOrderForm({ open, onClose, onSaved }: ManualOrderF
       },
       ticker,
       expDate: saleDate,
-      legs: contractsNum > 0
-        ? [{
-            legType: "futures",
-            direction: "sell",
-            ticker,
-            contracts: contractsNum,
-          }]
-        : [],
+      legs,
       broker,
       brokerAccount,
       brokeragePerContract: parseNum(brokeragePerContract),
@@ -136,7 +168,7 @@ export default function ManualOrderForm({ open, onClose, onSaved }: ManualOrderF
       stonexConfirmedAt: null,
       generatedAt: new Date().toISOString(),
       generatedByUserId: null,
-      notes: "Cadastro manual",
+      notes: notes.trim() || "Cadastro manual",
     };
 
     saveOrder(record);
@@ -183,18 +215,23 @@ export default function ManualOrderForm({ open, onClose, onSaved }: ManualOrderF
 
           {/* Volume + Ticker */}
           <div className="grid grid-cols-2 gap-2">
-            <Field label="Volume (sacas) *" value={volumeSacks} onChange={setVolumeSacks} placeholder="5000" />
+            <Field label="Volume (sacas) *" value={volumeSacks} onChange={setVolumeSacks} placeholder="5.000" />
             <Field label="Ticker *" value={ticker} onChange={setTicker} placeholder={isSoja ? "ZSN26" : "CCMU26"} />
           </div>
 
           {/* Prices */}
           <div className="grid grid-cols-2 gap-2">
-            <Field label="Preço líquido (R$) *" value={netPrice} onChange={setNetPrice} placeholder="115,00" />
-            <Field label="Preço bruto (R$)" value={grossPrice} onChange={setGrossPrice} placeholder="125,00" />
+            <Field label="Preço líquido (R$/sc) *" value={netPrice} onChange={setNetPrice} placeholder="115,00" />
+            <Field label="Preço bruto (R$/sc)" value={grossPrice} onChange={setGrossPrice} placeholder="125,00" />
           </div>
 
           <div className="grid grid-cols-2 gap-2">
-            <Field label={`Futuro (${isSoja ? "USD" : "BRL"})`} value={futuresPrice} onChange={setFuturesPrice} placeholder={isSoja ? "1050.00" : "72.00"} />
+            <Field
+              label={isSoja ? "Futuro (¢/bu ou USD/bu)" : "Futuro (R$/sc)"}
+              value={futuresPrice}
+              onChange={setFuturesPrice}
+              placeholder={isSoja ? "1050.00" : "72,00"}
+            />
             {isSoja && (
               <Field label="Câmbio (R$/USD)" value={exchangeRate} onChange={setExchangeRate} placeholder="5.7500" />
             )}
@@ -205,15 +242,26 @@ export default function ManualOrderForm({ open, onClose, onSaved }: ManualOrderF
 
           {isSoja && (
             <div className="grid grid-cols-2 gap-2">
-              <Field label="Contratos" value={contracts} onChange={setContracts} placeholder="18.37" />
-              <div />
+              <Field label="Contratos" value={contracts} onChange={setContracts} placeholder="18" />
+              <Field
+                label="Qtd Dólar (USD)"
+                value={notionalUsdManual}
+                onChange={setNotionalUsdManual}
+                placeholder={calculatedNotional > 0 ? calculatedNotional.toFixed(2) : "auto"}
+              />
             </div>
+          )}
+
+          {isSoja && calculatedNotional > 0 && !notionalUsdManual && (
+            <p className="text-[10px] text-muted-foreground -mt-1">
+              Calculado: {calculatedNotional.toLocaleString("pt-BR", { minimumFractionDigits: 2 })} USD
+            </p>
           )}
 
           <Separator />
 
           {/* Basis */}
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Basis</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Basis (R$/sc)</p>
           <div className="grid grid-cols-3 gap-2">
             <Field label="Alvo" value={targetBasis} onChange={setTargetBasis} placeholder="-29,00" />
             <Field label="Comprado" value={purchasedBasis} onChange={setPurchasedBasis} placeholder="-30,50" />
@@ -223,12 +271,12 @@ export default function ManualOrderForm({ open, onClose, onSaved }: ManualOrderF
           <Separator />
 
           {/* Costs */}
-          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Custos (R$/sc)</p>
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Custos</p>
           <div className="grid grid-cols-2 gap-2">
-            <Field label="Armazenagem" value={storageCost} onChange={setStorageCost} placeholder="2,50" />
-            <Field label="Financeiro" value={financialCost} onChange={setFinancialCost} placeholder="3,00" />
-            <Field label="Corretagem" value={brokerageCost} onChange={setBrokerageCost} placeholder="0,50" />
-            <Field label="Desk" value={deskCost} onChange={setDeskCost} placeholder="0,30" />
+            <Field label="Armazenagem (R$/sc)" value={storageCost} onChange={setStorageCost} placeholder="2,50" />
+            <Field label="Financeiro (R$/sc)" value={financialCost} onChange={setFinancialCost} placeholder="3,00" />
+            <Field label="Corretagem (R$/sc)" value={brokerageCost} onChange={setBrokerageCost} placeholder="0,50" />
+            <Field label="Desk (R$/sc)" value={deskCost} onChange={setDeskCost} placeholder="0,30" />
           </div>
 
           <Separator />
@@ -255,6 +303,17 @@ export default function ManualOrderForm({ open, onClose, onSaved }: ManualOrderF
           <div className="grid grid-cols-2 gap-2">
             <Field label="Pagamento (DD/MM/YYYY) *" value={paymentDate} onChange={setPaymentDate} placeholder="15/04/2026" />
             <Field label="Venda (DD/MM/YYYY) *" value={saleDate} onChange={setSaleDate} placeholder="01/05/2026" />
+          </div>
+
+          {/* Notes */}
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Observações</Label>
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Cadastro manual"
+              className="h-16 resize-none text-sm"
+            />
           </div>
 
           <Button onClick={handleSave} className="w-full gap-2" size="lg" disabled={!isValid()}>

@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { ClipboardList, Download, Copy, Check, ChevronDown, X, PlusCircle } from "lucide-react";
 import ManualOrderForm from "@/components/ManualOrderForm";
 import { formatBRL } from "@/lib/formatters";
+import { toast } from "@/hooks/use-toast";
 import type { OrderRecord } from "@/lib/orderRecord";
 import {
   getAllOrders,
@@ -9,6 +10,7 @@ import {
   updateStonexConfirmation,
   deleteOrder,
   exportOrdersToJson,
+  updateOrderNotes,
 } from "@/lib/orderStorage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -64,6 +66,7 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
   const [copiedConfirm, setCopiedConfirm] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [showManualForm, setShowManualForm] = useState(false);
+  const [editNotes, setEditNotes] = useState("");
 
   const refresh = useCallback(() => {
     setOrders(getAllOrders());
@@ -170,7 +173,7 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
                 {orders.map((o) => (
                   <button
                     key={o.id}
-                    onClick={() => { setSelected(o); setCopiedOrder(false); setCopiedConfirm(false); setConfirmText(""); }}
+                    onClick={() => { setSelected(o); setCopiedOrder(false); setCopiedConfirm(false); setConfirmText(""); setEditNotes(o.notes ?? ""); }}
                     className="w-full rounded-lg border bg-background p-3 text-left transition-colors hover:bg-muted/50"
                   >
                     <div className="flex items-start justify-between gap-2">
@@ -236,6 +239,15 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
                     <span className="font-mono">{selected.exchangeRate.toFixed(4)}</span>
                   </>
                 )}
+                {(() => {
+                  const ndfLeg = selected.legs.find((l) => l.legType === "ndf");
+                  return ndfLeg?.notionalUsd ? (
+                    <>
+                      <span className="text-muted-foreground">Qtd Dólar</span>
+                      <span className="font-mono">US$ {ndfLeg.notionalUsd.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+                    </>
+                  ) : null;
+                })()}
                 <span className="text-muted-foreground">Basis comprado</span>
                 <span className="font-mono">{formatBRL(selected.purchasedBasisBrl)}</span>
                 <span className="text-muted-foreground">Basis breakeven</span>
@@ -287,6 +299,32 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
                   )}
                 </div>
               )}
+
+              {/* Notes */}
+              <div className="space-y-1">
+                <span className="text-xs font-semibold text-muted-foreground">Observações</span>
+                <Textarea
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  placeholder="Sem observações"
+                  className="h-16 resize-none text-sm"
+                />
+                {editNotes !== (selected.notes ?? "") && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="gap-1"
+                    onClick={() => {
+                      updateOrderNotes(selected.id, editNotes);
+                      refresh();
+                      setSelected({ ...selected, notes: editNotes });
+                      toast({ title: "Observações salvas" });
+                    }}
+                  >
+                    Salvar observações
+                  </Button>
+                )}
+              </div>
 
               <Separator />
 
