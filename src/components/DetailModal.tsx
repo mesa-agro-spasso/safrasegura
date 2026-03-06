@@ -19,6 +19,12 @@ interface DetailModalProps {
   onGenerateOrder: (adjusted: PricingResult) => void;
 }
 
+function parseInput(val: string): number | null {
+  const raw = val.replace(",", ".");
+  const n = parseFloat(raw);
+  return isNaN(n) ? null : n;
+}
+
 export default function DetailModal({
   open,
   onClose,
@@ -26,26 +32,50 @@ export default function DetailModal({
   onGenerateOrder,
 }: DetailModalProps) {
   const isSoja = result.commodity === "soybean";
-  const [netOverride, setNetOverride] = useState<string>("");
+  const [netOverride, setNetOverride] = useState("");
+  const [storageOv, setStorageOv] = useState("");
+  const [financialOv, setFinancialOv] = useState("");
+  const [brokerageOv, setBrokerageOv] = useState("");
+  const [deskOv, setDeskOv] = useState("");
 
-  const adjusted = useMemo(() => {
-    const raw = netOverride.replace(",", ".");
-    const parsed = parseFloat(raw);
-    if (!netOverride || isNaN(parsed)) return null;
-    const delta = parsed - result.netPriceBrl;
-    if (Math.abs(delta) < 0.001) return null;
+  const adjusted = useMemo<PricingResult>(() => {
+    const storage = parseInput(storageOv) ?? result.costs.storageBrl;
+    const financial = parseInput(financialOv) ?? result.costs.financialBrl;
+    const brokerage = parseInput(brokerageOv) ?? result.costs.brokerageBrl;
+    const desk = parseInput(deskOv) ?? result.costs.deskCostBrl;
+    const totalCosts = storage + financial + brokerage + desk;
+
+    const costsDelta = totalCosts - result.costs.totalBrl;
+
+    const netFromCosts = result.netPriceBrl - costsDelta;
+    const netFinal = parseInput(netOverride) ?? netFromCosts;
+    const netDelta = netFinal - result.netPriceBrl;
+    const totalDelta = netDelta + costsDelta;
+
     return {
       ...result,
-      netPriceBrl: parsed,
-      grossPriceBrl: result.grossPriceBrl + delta,
-      purchasedBasisBrl: result.purchasedBasisBrl + delta,
+      netPriceBrl: netFinal,
+      grossPriceBrl: result.grossPriceBrl + totalDelta,
+      purchasedBasisBrl: result.purchasedBasisBrl + totalDelta,
+      breakEvenBasisBrl: result.breakEvenBasisBrl + costsDelta,
+      costs: {
+        storageBrl: storage,
+        financialBrl: financial,
+        brokerageBrl: brokerage,
+        deskCostBrl: desk,
+        totalBrl: totalCosts,
+      },
     };
-  }, [netOverride, result]);
+  }, [netOverride, storageOv, financialOv, brokerageOv, deskOv, result]);
 
-  const r = adjusted ?? result;
+  const r = adjusted;
 
   const handleClose = () => {
     setNetOverride("");
+    setStorageOv("");
+    setFinancialOv("");
+    setBrokerageOv("");
+    setDeskOv("");
     onClose();
   };
 
@@ -64,13 +94,11 @@ export default function DetailModal({
           <div className="grid grid-cols-2 items-center gap-2 text-sm">
             <Row label="Preço bruto" value={formatBRL(r.grossPriceBrl)} />
             <span className="text-muted-foreground">Preço líquido</span>
-            <Input
-              type="text"
-              inputMode="decimal"
-              placeholder={result.netPriceBrl.toFixed(2).replace(".", ",")}
+            <EditableCell
+              placeholder={result.netPriceBrl}
               value={netOverride}
-              onChange={(e) => setNetOverride(e.target.value)}
-              className="h-7 text-right font-mono text-sm text-positive border-primary/30 focus-visible:ring-primary"
+              onChange={setNetOverride}
+              highlight
             />
             <Row label="Basis alvo" value={formatBRL(r.targetBasisBrl)} />
             <Row label="Basis comprado" value={formatBRL(r.purchasedBasisBrl)} />
@@ -83,11 +111,15 @@ export default function DetailModal({
             <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               Custos Detalhados
             </p>
-            <div className="grid grid-cols-2 gap-1 text-sm">
-              <Row label="Armazenagem" value={formatBRL(r.costs.storageBrl)} />
-              <Row label="Financeiro" value={formatBRL(r.costs.financialBrl)} />
-              <Row label="Corretagem" value={formatBRL(r.costs.brokerageBrl)} />
-              <Row label="Desk" value={formatBRL(r.costs.deskCostBrl)} />
+            <div className="grid grid-cols-2 items-center gap-1 text-sm">
+              <span className="text-muted-foreground">Armazenagem</span>
+              <EditableCell placeholder={result.costs.storageBrl} value={storageOv} onChange={setStorageOv} />
+              <span className="text-muted-foreground">Financeiro</span>
+              <EditableCell placeholder={result.costs.financialBrl} value={financialOv} onChange={setFinancialOv} />
+              <span className="text-muted-foreground">Corretagem</span>
+              <EditableCell placeholder={result.costs.brokerageBrl} value={brokerageOv} onChange={setBrokerageOv} />
+              <span className="text-muted-foreground">Desk</span>
+              <EditableCell placeholder={result.costs.deskCostBrl} value={deskOv} onChange={setDeskOv} />
             </div>
             <div className="mt-2 flex justify-between rounded bg-muted px-3 py-2 text-sm font-semibold">
               <span>Total custos</span>
@@ -111,5 +143,28 @@ function Row({ label, value, positive }: { label: string; value: string; positiv
       <span className="text-muted-foreground">{label}</span>
       <span className={`text-right font-mono ${positive ? "text-positive" : ""}`}>{value}</span>
     </>
+  );
+}
+
+function EditableCell({
+  placeholder,
+  value,
+  onChange,
+  highlight,
+}: {
+  placeholder: number;
+  value: string;
+  onChange: (v: string) => void;
+  highlight?: boolean;
+}) {
+  return (
+    <Input
+      type="text"
+      inputMode="decimal"
+      placeholder={placeholder.toFixed(2).replace(".", ",")}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      className={`h-7 text-right font-mono text-sm border-primary/30 focus-visible:ring-primary ${highlight ? "text-positive" : ""}`}
+    />
   );
 }
