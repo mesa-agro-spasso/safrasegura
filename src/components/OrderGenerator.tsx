@@ -10,55 +10,27 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { buildHedgeOrder, type PricingResult } from "@/lib/pricing-index";
 
 interface OrderGeneratorProps {
   open: boolean;
   onClose: () => void;
-  commodity: "soja" | "milho";
-  city: string;
-  column: string;
-  value: number;
+  result: PricingResult;
 }
 
 export default function OrderGenerator({
   open,
   onClose,
-  commodity,
-  city,
-  column,
-  value,
+  result,
 }: OrderGeneratorProps) {
-  const isSoja = commodity === "soja";
+  const isSoja = result.commodity === "soybean";
   const [volume, setVolume] = useState("");
-  const [corretagem, setCorretagem] = useState("15.00");
   const [contaBroker, setContaBroker] = useState("17130");
-  const [dataPagamento, setDataPagamento] = useState("");
-  const [dataVenda, setDataVenda] = useState("");
-  const [maturidadeNdf, setMaturidadeNdf] = useState("");
   const [generated, setGenerated] = useState(false);
+  const [orderText, setOrderText] = useState("");
+  const [confirmText, setConfirmText] = useState("");
   const [copiedOrder, setCopiedOrder] = useState(false);
   const [copiedConfirm, setCopiedConfirm] = useState(false);
-
-  const orderText = `📋 *ORDEM DE ${commodity.toUpperCase()}*
-━━━━━━━━━━━━━━━
-📍 Praça: ${city}
-📅 Vencimento: ${column}
-💰 Preço: R$ ${value.toFixed(2).replace(".", ",")}
-📦 Volume: ${volume || "—"} sacas
-🏦 Conta: ${contaBroker}
-💵 Corretagem: R$ ${corretagem}/contrato
-📅 Pagamento: ${dataPagamento || "—"}
-📅 Venda: ${dataVenda || "—"}${isSoja ? `\n📅 NDF: ${maturidadeNdf || "—"}` : ""}
-━━━━━━━━━━━━━━━`;
-
-  const confirmText = `✅ *CONFIRMAÇÃO*
-━━━━━━━━━━━━━━━
-${commodity.toUpperCase()} — ${city}
-Preço: R$ ${value.toFixed(2).replace(".", ",")}
-Volume: ${volume || "—"} sacas
-Conta: ${contaBroker}
-Status: ✅ Ordem enviada
-━━━━━━━━━━━━━━━`;
 
   const handleCopy = async (text: string, type: "order" | "confirm") => {
     try {
@@ -76,11 +48,38 @@ Status: ✅ Ordem enviada
   };
 
   const handleGenerate = () => {
+    const volumeSacks = parseFloat(volume);
+    if (!volumeSacks || volumeSacks <= 0) return;
+
+    const order = buildHedgeOrder({
+      engineResult: result.engineResult,
+      volumeSacks,
+      commodity: result.commodity as "soybean" | "corn",
+      exchange: isSoja ? "cbot" : "b3",
+      brokeragePerContract: isSoja ? 15.0 : 12.0,
+      broker: "stonex",
+      brokerAccount: contaBroker,
+      paymentDate: result.paymentDate,
+      saleDate: result.saleDate,
+      ndfTableVersionId: new Date().toISOString(),
+      ndfMaturity: isSoja ? result.saleDate : undefined,
+    });
+
+    setOrderText(order.orderMessage);
+    setConfirmText(order.confirmationMessage);
     setGenerated(true);
   };
 
+  const handleClose = () => {
+    onClose();
+    setGenerated(false);
+    setVolume("");
+    setOrderText("");
+    setConfirmText("");
+  };
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); setGenerated(false); } }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) handleClose(); }}>
       <DialogContent className="max-w-sm max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
@@ -101,63 +100,18 @@ Status: ✅ Ordem enviada
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Corretagem/contrato</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={corretagem}
-                onChange={(e) => setCorretagem(e.target.value)}
-                className="h-9 font-mono text-sm"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Conta broker</Label>
-              <Input
-                type="text"
-                value={contaBroker}
-                onChange={(e) => setContaBroker(e.target.value)}
-                className="h-9 font-mono text-sm"
-              />
-            </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Conta broker</Label>
+            <Input
+              type="text"
+              value={contaBroker}
+              onChange={(e) => setContaBroker(e.target.value)}
+              className="h-9 font-mono text-sm"
+            />
           </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Data pagamento</Label>
-              <Input
-                type="date"
-                value={dataPagamento}
-                onChange={(e) => setDataPagamento(e.target.value)}
-                className="h-9 text-sm"
-              />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Data venda</Label>
-              <Input
-                type="date"
-                value={dataVenda}
-                onChange={(e) => setDataVenda(e.target.value)}
-                className="h-9 text-sm"
-              />
-            </div>
-          </div>
-
-          {isSoja && (
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">Maturidade NDF</Label>
-              <Input
-                type="date"
-                value={maturidadeNdf}
-                onChange={(e) => setMaturidadeNdf(e.target.value)}
-                className="h-9 text-sm"
-              />
-            </div>
-          )}
 
           {!generated ? (
-            <Button onClick={handleGenerate} className="w-full gap-2" size="lg" disabled={!volume}>
+            <Button onClick={handleGenerate} className="w-full gap-2" size="lg" disabled={!volume || parseFloat(volume) <= 0}>
               <Send className="h-4 w-4" />
               Gerar Ordem
             </Button>

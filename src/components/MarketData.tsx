@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { TrendingUp, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,16 +10,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  calculateStonexForwardDolRate,
+  formatDateISO,
+} from "@/lib/pricing-index";
 
 const SOJA_CONTRACTS = ["ZSN26", "ZSQ26", "ZSU26", "ZSX26", "ZSF27", "ZSH27"];
 const MILHO_CONTRACTS = ["CCMU26", "CCMX26", "CCMF27", "CCMH27", "CCMK27", "CCMN27"];
 
-interface MarketDataValues {
+export interface MarketDataValues {
   cbotSoja: number;
   contratoSoja: string;
   dataVendaSoja: string;
   dolarSpot: number;
-  dolarStonex: string;
+  dolarStonex: number;
   b3Milho: number;
   contratoMilho: string;
   dataVendaMilho: string;
@@ -35,11 +39,22 @@ export default function MarketData({ onGenerate }: MarketDataProps) {
     contratoSoja: "ZSN26",
     dataVendaSoja: "2026-06-30",
     dolarSpot: 5.80,
-    dolarStonex: "5.9143",
+    dolarStonex: 0,
     b3Milho: 75.00,
     contratoMilho: "CCMU26",
     dataVendaMilho: "2026-09-30",
   });
+
+  // Recalculate StoneX forward dollar whenever spot or sale date changes
+  useEffect(() => {
+    const today = formatDateISO(new Date());
+    const dolarStonex = calculateStonexForwardDolRate(
+      values.dolarSpot,
+      values.dataVendaSoja,
+      today,
+    );
+    setValues((prev) => ({ ...prev, dolarStonex }));
+  }, [values.dolarSpot, values.dataVendaSoja]);
 
   const update = (field: keyof MarketDataValues, val: string | number) => {
     setValues((prev) => ({ ...prev, [field]: val }));
@@ -110,7 +125,7 @@ export default function MarketData({ onGenerate }: MarketDataProps) {
           <Label className="text-xs text-muted-foreground">Dólar StoneX</Label>
           <Input
             type="text"
-            value={values.dolarStonex}
+            value={values.dolarStonex.toFixed(4)}
             readOnly
             className="h-9 font-mono text-sm bg-muted cursor-not-allowed"
           />

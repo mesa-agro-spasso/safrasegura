@@ -8,43 +8,22 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import type { PricingResult } from "@/lib/pricing-index";
 
 interface DetailModalProps {
   open: boolean;
   onClose: () => void;
-  commodity: "soja" | "milho";
-  city: string;
-  column: string;
-  value: number;
+  result: PricingResult;
   onGenerateOrder: () => void;
 }
 
 export default function DetailModal({
   open,
   onClose,
-  commodity,
-  city,
-  column,
-  value,
+  result,
   onGenerateOrder,
 }: DetailModalProps) {
-  // Placeholder detail values
-  const details = {
-    precoBruto: value + 3.50,
-    precoLiquido: value,
-    basisAlvo: -1.20,
-    basisComprado: -0.85,
-    basisBreakeven: -1.05,
-    custos: {
-      armazenagem: 1.20,
-      financeiro: 0.80,
-      corretagem: 0.50,
-      desk: 1.00,
-      total: 3.50,
-    },
-  };
-
-  const isSoja = commodity === "soja";
+  const isSoja = result.commodity === "soybean";
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -52,18 +31,18 @@ export default function DetailModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base">
             <Info className="h-4 w-4 text-primary" />
-            {isSoja ? "Soja" : "Milho"} — {city}
+            {isSoja ? "Soja" : "Milho"} — {result.displayName}
           </DialogTitle>
-          <p className="text-xs text-muted-foreground">Vencimento: {column}</p>
+          <p className="text-xs text-muted-foreground">Vencimento: {result.paymentLabel}</p>
         </DialogHeader>
 
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-2 text-sm">
-            <Row label="Preço bruto" value={formatBRL(details.precoBruto)} />
-            <Row label="Preço líquido" value={formatBRL(details.precoLiquido)} positive />
-            <Row label="Basis alvo" value={details.basisAlvo.toFixed(2)} />
-            <Row label="Basis comprado" value={details.basisComprado.toFixed(2)} />
-            <Row label="Basis breakeven" value={details.basisBreakeven.toFixed(2)} />
+            <Row label="Preço bruto" value={formatBRL(result.grossPriceBrl)} />
+            <Row label="Preço líquido" value={formatBRL(result.netPriceBrl)} positive />
+            <Row label="Basis alvo" value={formatBRL(result.targetBasisBrl)} />
+            <Row label="Basis comprado" value={formatBRL(result.purchasedBasisBrl)} />
+            <Row label="Basis breakeven" value={formatBRL(result.breakEvenBasisBrl)} />
           </div>
 
           <Separator />
@@ -73,14 +52,14 @@ export default function DetailModal({
               Custos Detalhados
             </p>
             <div className="grid grid-cols-2 gap-1 text-sm">
-              <Row label="Armazenagem" value={formatBRL(details.custos.armazenagem)} />
-              <Row label="Financeiro" value={formatBRL(details.custos.financeiro)} />
-              <Row label="Corretagem" value={formatBRL(details.custos.corretagem)} />
-              <Row label="Desk" value={formatBRL(details.custos.desk)} />
+              <Row label="Armazenagem" value={formatBRL(result.costs.storageBrl)} />
+              <Row label="Financeiro" value={formatBRL(result.costs.financialBrl)} />
+              <Row label="Corretagem" value={formatBRL(result.costs.brokerageBrl)} />
+              <Row label="Desk" value={formatBRL(result.costs.deskCostBrl)} />
             </div>
             <div className="mt-2 flex justify-between rounded bg-muted px-3 py-2 text-sm font-semibold">
               <span>Total custos</span>
-              <span className="font-mono text-negative">{formatBRL(details.custos.total)}</span>
+              <span className="font-mono text-negative">{formatBRL(result.costs.totalBrl)}</span>
             </div>
           </div>
 
