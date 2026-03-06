@@ -14,7 +14,129 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      orders: {
+        Row: {
+          break_even_basis_brl: number
+          broker: string
+          broker_account: string
+          brokerage_currency: string
+          brokerage_per_contract: number
+          commodity: string
+          confirmation_message: string
+          costs: Json
+          created_at: string
+          exchange: string
+          exchange_rate: number | null
+          exp_date: string
+          futures_price: number
+          futures_price_currency: string
+          generated_at: string
+          generated_by_user_id: string | null
+          id: string
+          legs: Json
+          notes: string | null
+          operation_id: string | null
+          order_message: string
+          origination_price_gross_brl: number
+          origination_price_net_brl: number
+          payment_date: string
+          purchased_basis_brl: number
+          sale_date: string
+          sequential_number: number
+          status: string
+          stonex_confirmation_text: string | null
+          stonex_confirmed_at: string | null
+          target_basis_brl: number
+          ticker: string
+          updated_at: string
+          volume_bushels: number | null
+          volume_sacks: number
+          volume_tons: number
+          warehouse_display_name: string
+          warehouse_id: string
+        }
+        Insert: {
+          break_even_basis_brl?: number
+          broker?: string
+          broker_account?: string
+          brokerage_currency: string
+          brokerage_per_contract?: number
+          commodity: string
+          confirmation_message?: string
+          costs?: Json
+          created_at?: string
+          exchange: string
+          exchange_rate?: number | null
+          exp_date: string
+          futures_price: number
+          futures_price_currency: string
+          generated_at?: string
+          generated_by_user_id?: string | null
+          id?: string
+          legs?: Json
+          notes?: string | null
+          operation_id?: string | null
+          order_message?: string
+          origination_price_gross_brl: number
+          origination_price_net_brl: number
+          payment_date: string
+          purchased_basis_brl?: number
+          sale_date: string
+          sequential_number: number
+          status?: string
+          stonex_confirmation_text?: string | null
+          stonex_confirmed_at?: string | null
+          target_basis_brl?: number
+          ticker: string
+          updated_at?: string
+          volume_bushels?: number | null
+          volume_sacks: number
+          volume_tons: number
+          warehouse_display_name: string
+          warehouse_id: string
+        }
+        Update: {
+          break_even_basis_brl?: number
+          broker?: string
+          broker_account?: string
+          brokerage_currency?: string
+          brokerage_per_contract?: number
+          commodity?: string
+          confirmation_message?: string
+          costs?: Json
+          created_at?: string
+          exchange?: string
+          exchange_rate?: number | null
+          exp_date?: string
+          futures_price?: number
+          futures_price_currency?: string
+          generated_at?: string
+          generated_by_user_id?: string | null
+          id?: string
+          legs?: Json
+          notes?: string | null
+          operation_id?: string | null
+          order_message?: string
+          origination_price_gross_brl?: number
+          origination_price_net_brl?: number
+          payment_date?: string
+          purchased_basis_brl?: number
+          sale_date?: string
+          sequential_number?: number
+          status?: string
+          stonex_confirmation_text?: string | null
+          stonex_confirmed_at?: string | null
+          target_basis_brl?: number
+          ticker?: string
+          updated_at?: string
+          volume_bushels?: number | null
+          volume_sacks?: number
+          volume_tons?: number
+          warehouse_display_name?: string
+          warehouse_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
