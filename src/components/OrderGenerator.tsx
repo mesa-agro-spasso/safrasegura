@@ -131,8 +131,8 @@ export default function OrderGenerator({
                   </Button>
                 </div>
                 <Textarea
-                  readOnly
                   value={orderText}
+                  onChange={(e) => setOrderText(e.target.value)}
                   className="h-44 resize-none font-mono text-xs leading-relaxed"
                 />
               </div>
