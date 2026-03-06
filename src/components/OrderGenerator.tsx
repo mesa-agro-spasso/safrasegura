@@ -151,8 +151,8 @@ export default function OrderGenerator({
                   </Button>
                 </div>
                 <Textarea
-                  readOnly
                   value={confirmText}
+                  onChange={(e) => setConfirmText(e.target.value)}
                   className="h-32 resize-none font-mono text-xs leading-relaxed"
                 />
               </div>
