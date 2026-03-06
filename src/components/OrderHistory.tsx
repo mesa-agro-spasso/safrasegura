@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import { ClipboardList, Download, Copy, Check, ChevronDown, X } from "lucide-react";
+import { ClipboardList, Download, Copy, Check, ChevronDown, X, PlusCircle } from "lucide-react";
+import ManualOrderForm from "@/components/ManualOrderForm";
 import { formatBRL } from "@/lib/formatters";
 import type { OrderRecord } from "@/lib/orderRecord";
 import {
