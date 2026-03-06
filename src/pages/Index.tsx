@@ -1,42 +1,101 @@
 import { useState } from "react";
 import { BarChart3 } from "lucide-react";
 import MarketData from "@/components/MarketData";
+import type { MarketDataValues } from "@/components/MarketData";
 import PriceTable from "@/components/PriceTable";
 import DetailModal from "@/components/DetailModal";
 import OrderGenerator from "@/components/OrderGenerator";
+import {
+  runPricingTable,
+  estimateCbotExpiration,
+  formatDateISO,
+  type PricingResult,
+  type WarehouseConfig,
+  type SharedCosts,
+} from "@/lib/pricing-index";
 
-interface CellSelection {
-  commodity: "soja" | "milho";
-  city: string;
-  column: string;
-  value: number;
-}
+const warehouses: Record<string, WarehouseConfig> = {
+  confresa: {
+    displayName: "Confresa",
+    soybean: { basisConfig: { mode: "fixed", value: -29.0 } },
+    corn: {
+      basisConfig: { mode: "fixed", value: -25.0 },
+      costOverrides: { brokeragePerContract: 12.0, shrinkageRateMonthly: 0.003 },
+    },
+  },
+  matupa: {
+    displayName: "Matupá",
+    soybean: { basisConfig: { mode: "fixed", value: -30.0 } },
+    corn: {
+      basisConfig: { mode: "fixed", value: -30.0 },
+      costOverrides: { brokeragePerContract: 12.0, shrinkageRateMonthly: 0.003 },
+    },
+  },
+  alta_floresta: {
+    displayName: "Alta Floresta",
+    soybean: {
+      basisConfig: { mode: "reference_delta", referenceWarehouseId: "matupa", deltaBrl: -1.0 },
+    },
+    corn: {
+      basisConfig: { mode: "reference_delta", referenceWarehouseId: "matupa", deltaBrl: -1.5 },
+      costOverrides: { brokeragePerContract: 12.0, shrinkageRateMonthly: 0.003 },
+    },
+  },
+};
+
+const sharedCosts: SharedCosts = {
+  interestRate: 1.4,
+  interestRatePeriod: "am",
+  storageCost: 3.5,
+  storageCostType: "fixed",
+  receptionCost: 0.0,
+  brokeragePerContract: 15.0,
+  deskCostPct: 0.003,
+  shrinkageRateMonthly: 0.0,
+};
 
 const Index = () => {
-  const [marketData, setMarketData] = useState({
-    cbotSoja: 10.50,
-    contratoSoja: "ZSN26",
-    dolarStonex: "5.9143",
-    contratoMilho: "CCMU26",
-    b3Milho: 75.00,
-  });
-  const [showTable, setShowTable] = useState(false);
-  const [selectedCell, setSelectedCell] = useState<CellSelection | null>(null);
+  const [marketValues, setMarketValues] = useState<MarketDataValues | null>(null);
+  const [results, setResults] = useState<PricingResult[]>([]);
+  const [selectedResult, setSelectedResult] = useState<PricingResult | null>(null);
   const [showOrder, setShowOrder] = useState(false);
 
-  const handleGenerate = (values: any) => {
-    setMarketData({
-      cbotSoja: values.cbotSoja,
-      contratoSoja: values.contratoSoja,
-      dolarStonex: values.dolarStonex,
-      contratoMilho: values.contratoMilho,
-      b3Milho: values.b3Milho,
+  const handleGenerate = (values: MarketDataValues) => {
+    setMarketValues(values);
+    const today = formatDateISO(new Date());
+
+    const expDateSoja = estimateCbotExpiration(values.contratoSoja);
+
+    const pricingResults = runPricingTable({
+      warehouses,
+      sharedCosts,
+      market: {
+        soybean: {
+          cbotFuturesUsd: values.cbotSoja,
+          ticker: values.contratoSoja,
+          expDate: expDateSoja ? formatDateISO(expDateSoja) : values.dataVendaSoja,
+          exchangeRate: values.dolarStonex, // forward, NOT spot
+          saleDate: values.dataVendaSoja,
+        },
+        corn: {
+          b3FuturesBrl: values.b3Milho,
+          ticker: values.contratoMilho,
+          expDate: values.dataVendaMilho,
+          saleDate: values.dataVendaMilho,
+        },
+      },
+      tradeDate: today,
+      paymentDates: {
+        soybean: ["2026-03-30", "2026-04-30"],
+        corn: ["2026-08-30", "2026-09-30"],
+      },
     });
-    setShowTable(true);
+
+    setResults(pricingResults);
   };
 
-  const handleCellClick = (commodity: "soja" | "milho", city: string, column: string, value: number) => {
-    setSelectedCell({ commodity, city, column, value });
+  const handleCellClick = (result: PricingResult) => {
+    setSelectedResult(result);
   };
 
   const handleGenerateOrder = () => {
@@ -61,40 +120,35 @@ const Index = () => {
       <main className="container space-y-4 pt-4">
         <MarketData onGenerate={handleGenerate} />
 
-        {showTable && (
+        {results.length > 0 && marketValues && (
           <PriceTable
-            contratoSoja={marketData.contratoSoja}
-            cbotSoja={marketData.cbotSoja}
-            dolarStonex={marketData.dolarStonex}
-            contratoMilho={marketData.contratoMilho}
-            b3Milho={marketData.b3Milho}
+            results={results}
+            contratoSoja={marketValues.contratoSoja}
+            cbotSoja={marketValues.cbotSoja}
+            dolarStonex={marketValues.dolarStonex}
+            contratoMilho={marketValues.contratoMilho}
+            b3Milho={marketValues.b3Milho}
             onCellClick={handleCellClick}
           />
         )}
       </main>
 
       {/* Detail Modal */}
-      {selectedCell && (
+      {selectedResult && !showOrder && (
         <DetailModal
-          open={!!selectedCell && !showOrder}
-          onClose={() => setSelectedCell(null)}
-          commodity={selectedCell.commodity}
-          city={selectedCell.city}
-          column={selectedCell.column}
-          value={selectedCell.value}
+          open={true}
+          onClose={() => setSelectedResult(null)}
+          result={selectedResult}
           onGenerateOrder={handleGenerateOrder}
         />
       )}
 
       {/* Order Generator */}
-      {selectedCell && (
+      {selectedResult && showOrder && (
         <OrderGenerator
-          open={showOrder}
-          onClose={() => { setShowOrder(false); setSelectedCell(null); }}
-          commodity={selectedCell.commodity}
-          city={selectedCell.city}
-          column={selectedCell.column}
-          value={selectedCell.value}
+          open={true}
+          onClose={() => { setShowOrder(false); setSelectedResult(null); }}
+          result={selectedResult}
         />
       )}
     </div>
