@@ -1,5 +1,5 @@
-import { useState, useCallback } from "react";
-import { ClipboardList, Download, Copy, Check, ChevronDown, X, PlusCircle } from "lucide-react";
+import { useState, useCallback, useMemo } from "react";
+import { ClipboardList, Download, Copy, Check, ChevronDown, X, PlusCircle, Trash2, Filter } from "lucide-react";
 import ManualOrderForm from "@/components/ManualOrderForm";
 import { formatBRL } from "@/lib/formatters";
 import { toast } from "@/hooks/use-toast";
@@ -11,10 +11,12 @@ import {
   deleteOrder,
   exportOrdersToJson,
   updateOrderNotes,
+  permanentlyDeleteOrder,
 } from "@/lib/orderStorage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import {
   Dialog,
   DialogContent,
@@ -37,6 +39,13 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 
 const STATUS_MAP: Record<OrderRecord["status"], { label: string; className: string }> = {
@@ -68,24 +77,44 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
   const [showManualForm, setShowManualForm] = useState(false);
   const [editNotes, setEditNotes] = useState("");
 
+  // Filters
+  const [filterStatus, setFilterStatus] = useState<string>("ALL");
+  const [filterCommodity, setFilterCommodity] = useState<string>("ALL");
+  const [filterWarehouse, setFilterWarehouse] = useState<string>("ALL");
+  const [filterDateFrom, setFilterDateFrom] = useState("");
+  const [filterDateTo, setFilterDateTo] = useState("");
+
   const refresh = useCallback(() => {
     setOrders(getAllOrders());
   }, []);
 
   // refresh when parent signals new order
-  useState(() => {
-    refresh();
-  });
-  // Also re-read on refreshKey change
-  if (orders.length === 0 && refreshKey > 0) {
-    // force re-read
-  }
-  // Use effect-like pattern via key
+  useState(() => { refresh(); });
   const [lastKey, setLastKey] = useState(refreshKey);
   if (refreshKey !== lastKey) {
     setLastKey(refreshKey);
     setOrders(getAllOrders());
   }
+
+  const filteredOrders = useMemo(() => {
+    return orders.filter((o) => {
+      if (filterStatus !== "ALL" && o.status !== filterStatus) return false;
+      if (filterCommodity !== "ALL" && o.commodity !== filterCommodity) return false;
+      if (filterWarehouse !== "ALL" && o.warehouseDisplayName !== filterWarehouse) return false;
+      if (filterDateFrom) {
+        const from = new Date(filterDateFrom);
+        if (new Date(o.generatedAt) < from) return false;
+      }
+      if (filterDateTo) {
+        const to = new Date(filterDateTo);
+        to.setHours(23, 59, 59, 999);
+        if (new Date(o.generatedAt) > to) return false;
+      }
+      return true;
+    });
+  }, [orders, filterStatus, filterCommodity, filterWarehouse, filterDateFrom, filterDateTo]);
+
+  const hasActiveFilters = filterStatus !== "ALL" || filterCommodity !== "ALL" || filterWarehouse !== "ALL" || filterDateFrom || filterDateTo;
 
   const handleCopy = async (text: string, type: "order" | "confirm") => {
     try {
@@ -103,7 +132,7 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
   const handleMarkSent = (id: string) => {
     updateOrderStatus(id, "SENT");
     refresh();
-    setSelected(getOrderById(id));
+    setSelected(orders.find((o) => o.id === id) ?? null);
   };
 
   const handleConfirmStonex = (id: string) => {
@@ -111,13 +140,20 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
     updateStonexConfirmation(id, confirmText.trim());
     setConfirmText("");
     refresh();
-    setSelected(getOrderById(id));
+    setSelected(orders.find((o) => o.id === id) ?? null);
   };
 
   const handleCancel = (id: string) => {
     deleteOrder(id);
     refresh();
-    setSelected(getOrderById(id));
+    setSelected(orders.find((o) => o.id === id) ?? null);
+  };
+
+  const handlePermanentDelete = (id: string) => {
+    permanentlyDeleteOrder(id);
+    setSelected(null);
+    refresh();
+    toast({ title: "Ordem apagada permanentemente" });
   };
 
   const handleExport = () => {
@@ -131,7 +167,13 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
     URL.revokeObjectURL(url);
   };
 
-  const getOrderById = (id: string) => orders.find((o) => o.id === id) ?? null;
+  const clearFilters = () => {
+    setFilterStatus("ALL");
+    setFilterCommodity("ALL");
+    setFilterWarehouse("ALL");
+    setFilterDateFrom("");
+    setFilterDateTo("");
+  };
 
   const commodityPt = (c: string) => (c === "soybean" ? "Soja" : "Milho");
 
@@ -163,14 +205,87 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
           </div>
         </div>
         <CollapsibleContent>
-          <div className="rounded-b-lg border border-t-0 bg-card p-3">
-            {orders.length === 0 ? (
+          <div className="rounded-b-lg border border-t-0 bg-card p-3 space-y-3">
+            {/* Filter bar */}
+            {orders.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <Filter className="h-3.5 w-3.5" />
+                  <span className="font-semibold uppercase tracking-wider">Filtros</span>
+                  {hasActiveFilters && (
+                    <Button variant="ghost" size="sm" className="h-5 px-1.5 text-[10px]" onClick={clearFilters}>
+                      Limpar
+                    </Button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+                  <Select value={filterStatus} onValueChange={setFilterStatus}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">Todos status</SelectItem>
+                      <SelectItem value="GENERATED">Gerada</SelectItem>
+                      <SelectItem value="SENT">Enviada</SelectItem>
+                      <SelectItem value="BROKER_CONFIRMED">Confirmada</SelectItem>
+                      <SelectItem value="LINKED">Vinculada</SelectItem>
+                      <SelectItem value="CANCELLED">Cancelada</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filterCommodity} onValueChange={setFilterCommodity}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Commodity" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">Todas</SelectItem>
+                      <SelectItem value="soybean">Soja</SelectItem>
+                      <SelectItem value="corn">Milho</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={filterWarehouse} onValueChange={setFilterWarehouse}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Praça" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ALL">Todas praças</SelectItem>
+                      <SelectItem value="Confresa">Confresa</SelectItem>
+                      <SelectItem value="Matupá">Matupá</SelectItem>
+                      <SelectItem value="Alta Floresta">Alta Floresta</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  <Input
+                    type="date"
+                    value={filterDateFrom}
+                    onChange={(e) => setFilterDateFrom(e.target.value)}
+                    placeholder="De"
+                    className="h-8 text-xs"
+                  />
+                  <Input
+                    type="date"
+                    value={filterDateTo}
+                    onChange={(e) => setFilterDateTo(e.target.value)}
+                    placeholder="Até"
+                    className="h-8 text-xs"
+                  />
+                </div>
+                {hasActiveFilters && (
+                  <p className="text-[10px] text-muted-foreground">
+                    {filteredOrders.length} de {orders.length} ordens
+                  </p>
+                )}
+              </div>
+            )}
+
+            {filteredOrders.length === 0 ? (
               <p className="py-6 text-center text-sm text-muted-foreground">
-                Nenhuma ordem registrada ainda.
+                {hasActiveFilters ? "Nenhuma ordem encontrada com esses filtros." : "Nenhuma ordem registrada ainda."}
               </p>
             ) : (
               <div className="space-y-2">
-                {orders.map((o) => (
+                {filteredOrders.map((o) => (
                   <button
                     key={o.id}
                     onClick={() => { setSelected(o); setCopiedOrder(false); setCopiedConfirm(false); setConfirmText(""); setEditNotes(o.notes ?? ""); }}
@@ -287,7 +402,6 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
                 <Textarea readOnly value={selected.confirmationMessage} className="h-24 resize-none font-mono text-xs leading-relaxed" />
               </div>
 
-              {/* StoneX confirmation text if exists */}
               {selected.stonexConfirmationText && (
                 <div>
                   <span className="text-xs font-semibold text-muted-foreground">Confirmação StoneX</span>
@@ -362,7 +476,7 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Cancelar ordem #{selected.sequentialNumber}?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Esta ação não pode ser desfeita. A ordem será marcada como cancelada.
+                          A ordem será marcada como cancelada.
                         </AlertDialogDescription>
                       </AlertDialogHeader>
                       <AlertDialogFooter>
@@ -374,6 +488,33 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
                     </AlertDialogContent>
                   </AlertDialog>
                 )}
+
+                {/* Hard delete */}
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-1 border-destructive/30 text-destructive hover:bg-destructive/10">
+                      <Trash2 className="h-3.5 w-3.5" />
+                      Apagar
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Apagar ordem #{selected.sequentialNumber} permanentemente?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        Esta ação é irreversível. A ordem será removida completamente do histórico.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Voltar</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        onClick={() => handlePermanentDelete(selected.id)}
+                      >
+                        Apagar permanentemente
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </div>
           </DialogContent>
