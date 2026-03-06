@@ -63,6 +63,7 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
   const [copiedOrder, setCopiedOrder] = useState(false);
   const [copiedConfirm, setCopiedConfirm] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
+  const [showManualForm, setShowManualForm] = useState(false);
 
   const refresh = useCallback(() => {
     setOrders(getAllOrders());
