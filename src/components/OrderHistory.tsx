@@ -341,6 +341,12 @@ export default function OrderHistory({ refreshKey }: { refreshKey: number }) {
           </DialogContent>
         </Dialog>
       )}
+
+      <ManualOrderForm
+        open={showManualForm}
+        onClose={() => setShowManualForm(false)}
+        onSaved={refresh}
+      />
     </>
   );
 }
