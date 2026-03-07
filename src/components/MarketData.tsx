@@ -45,14 +45,9 @@ export default function MarketData({ onGenerate }: MarketDataProps) {
     dataVendaMilho: "2026-09-30",
   });
 
-  // Recalculate StoneX forward dollar whenever spot or sale date changes
   useEffect(() => {
     const today = formatDateISO(new Date());
-    const dolarStonex = calculateStonexForwardDolRate(
-      values.dolarSpot,
-      values.dataVendaSoja,
-      today,
-    );
+    const dolarStonex = calculateStonexForwardDolRate(values.dolarSpot, values.dataVendaSoja, today);
     setValues((prev) => ({ ...prev, dolarStonex }));
   }, [values.dolarSpot, values.dataVendaSoja]);
 
@@ -61,123 +56,63 @@ export default function MarketData({ onGenerate }: MarketDataProps) {
   };
 
   return (
-    <section className="rounded-lg border bg-card p-4">
-      <div className="mb-3 flex items-center gap-2">
+    <div className="rounded-xl border bg-card p-5">
+      <div className="mb-4 flex items-center gap-2">
         <TrendingUp className="h-5 w-5 text-primary" />
         <h2 className="text-sm font-semibold uppercase tracking-wider text-primary">
-          Market Data
+          Dados de Mercado
         </h2>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        {/* CBOT Soja */}
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">CBOT Soja (USD/bu)</Label>
-          <Input
-            type="number"
-            step="0.01"
-            value={values.cbotSoja}
-            onChange={(e) => update("cbotSoja", parseFloat(e.target.value) || 0)}
-            className="h-9 font-mono text-sm"
-          />
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">CBOT Soja (USD/bu)</Label>
+          <Input type="number" step="0.01" value={values.cbotSoja} onChange={(e) => update("cbotSoja", parseFloat(e.target.value) || 0)} className="h-10 font-mono text-sm" />
         </div>
-
-        {/* Contrato Soja */}
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Contrato Soja</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">Contrato Soja</Label>
           <Select value={values.contratoSoja} onValueChange={(v) => update("contratoSoja", v)}>
-            <SelectTrigger className="h-9 text-sm">
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {SOJA_CONTRACTS.map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
-              ))}
+              {SOJA_CONTRACTS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
-
-        {/* Data Venda Soja */}
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Data Venda Soja</Label>
-          <Input
-            type="date"
-            value={values.dataVendaSoja}
-            onChange={(e) => update("dataVendaSoja", e.target.value)}
-            className="h-9 text-sm"
-          />
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">Data Venda Soja</Label>
+          <Input type="date" value={values.dataVendaSoja} onChange={(e) => update("dataVendaSoja", e.target.value)} className="h-10 text-sm" />
         </div>
-
-        {/* Dólar Spot */}
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Dólar Spot (BRL)</Label>
-          <Input
-            type="number"
-            step="0.01"
-            value={values.dolarSpot}
-            onChange={(e) => update("dolarSpot", parseFloat(e.target.value) || 0)}
-            className="h-9 font-mono text-sm"
-          />
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">Dólar Spot (BRL)</Label>
+          <Input type="number" step="0.01" value={values.dolarSpot} onChange={(e) => update("dolarSpot", parseFloat(e.target.value) || 0)} className="h-10 font-mono text-sm" />
         </div>
-
-        {/* Dólar StoneX (readonly) */}
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Dólar StoneX</Label>
-          <Input
-            type="text"
-            value={values.dolarStonex.toFixed(4)}
-            readOnly
-            className="h-9 font-mono text-sm bg-muted cursor-not-allowed"
-          />
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">Dólar StoneX</Label>
+          <Input type="text" value={values.dolarStonex.toFixed(4)} readOnly className="h-10 font-mono text-sm bg-muted cursor-not-allowed" />
         </div>
-
-        {/* B3 Milho */}
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">B3 Milho (BRL/sc)</Label>
-          <Input
-            type="number"
-            step="0.01"
-            value={values.b3Milho}
-            onChange={(e) => update("b3Milho", parseFloat(e.target.value) || 0)}
-            className="h-9 font-mono text-sm"
-          />
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">B3 Milho (BRL/sc)</Label>
+          <Input type="number" step="0.01" value={values.b3Milho} onChange={(e) => update("b3Milho", parseFloat(e.target.value) || 0)} className="h-10 font-mono text-sm" />
         </div>
-
-        {/* Contrato Milho */}
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Contrato Milho</Label>
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">Contrato Milho</Label>
           <Select value={values.contratoMilho} onValueChange={(v) => update("contratoMilho", v)}>
-            <SelectTrigger className="h-9 text-sm">
-              <SelectValue />
-            </SelectTrigger>
+            <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
-              {MILHO_CONTRACTS.map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
-              ))}
+              {MILHO_CONTRACTS.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
             </SelectContent>
           </Select>
         </div>
-
-        {/* Data Venda Milho */}
-        <div className="space-y-1">
-          <Label className="text-xs text-muted-foreground">Data Venda Milho</Label>
-          <Input
-            type="date"
-            value={values.dataVendaMilho}
-            onChange={(e) => update("dataVendaMilho", e.target.value)}
-            className="h-9 text-sm"
-          />
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">Data Venda Milho</Label>
+          <Input type="date" value={values.dataVendaMilho} onChange={(e) => update("dataVendaMilho", e.target.value)} className="h-10 text-sm" />
         </div>
       </div>
 
-      <Button
-        onClick={() => onGenerate(values)}
-        className="mt-4 w-full gap-2"
-        size="lg"
-      >
+      <Button onClick={() => onGenerate(values)} className="mt-5 w-full gap-2" size="lg">
         <RefreshCw className="h-4 w-4" />
         Gerar Tabela
       </Button>
-    </section>
+    </div>
   );
 }
