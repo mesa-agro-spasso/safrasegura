@@ -1,6 +1,8 @@
 import { useState, useMemo } from "react";
-import { PlusCircle } from "lucide-react";
+import { PlusCircle, CalendarIcon } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { format, isToday } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,7 +15,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
+import { cn } from "@/lib/utils";
 import type { OrderRecord } from "@/lib/orderRecord";
 import { saveOrder, getNextSequentialNumber } from "@/lib/orderStorage";
 
@@ -36,6 +51,8 @@ export default function NewOrder() {
   const navigate = useNavigate();
   const [commodity, setCommodity] = useState<"soybean" | "corn">("soybean");
   const [warehouseId, setWarehouseId] = useState("confresa");
+  const [operationDate, setOperationDate] = useState<Date>(new Date());
+  const [pendingDate, setPendingDate] = useState<Date | null>(null);
   const [volumeSacks, setVolumeSacks] = useState("");
   const [netPrice, setNetPrice] = useState("");
   const [grossPrice, setGrossPrice] = useState("");
@@ -71,7 +88,16 @@ export default function NewOrder() {
     return 0;
   }, [netPrice, volumeSacks, exchangeRate]);
 
-  const isValid = () => volumeSacks && netPrice && ticker && paymentDate && saleDate;
+  const isValid = () => volumeSacks && netPrice && ticker && paymentDate && saleDate && operationDate;
+
+  const handleDateSelect = (date: Date | undefined) => {
+    if (!date) return;
+    if (!isToday(date)) {
+      setPendingDate(date);
+    } else {
+      setOperationDate(date);
+    }
+  };
 
   const handleSave = async () => {
     if (!isValid() || saving) return;
@@ -130,6 +156,7 @@ export default function NewOrder() {
         status,
         stonexConfirmationText: null,
         stonexConfirmedAt: null,
+        operationDate: format(operationDate, "yyyy-MM-dd"),
         generatedAt: new Date().toISOString(),
         generatedByUserId: null,
         notes: notes.trim() || "Cadastro manual",
@@ -154,6 +181,31 @@ export default function NewOrder() {
       </div>
 
       <div className="rounded-xl border bg-card p-6 space-y-5">
+        {/* Operation Date */}
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium text-muted-foreground">Data da Operação *</Label>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" className={cn("w-full h-10 justify-start text-left font-mono text-sm", !operationDate && "text-muted-foreground")}>
+                <CalendarIcon className="mr-2 h-4 w-4" />
+                {format(operationDate, "dd/MM/yyyy", { locale: ptBR })}
+                {!isToday(operationDate) && (
+                  <span className="ml-auto text-xs text-destructive font-medium">Data alterada</span>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-0" align="start">
+              <Calendar
+                mode="single"
+                selected={operationDate}
+                onSelect={handleDateSelect}
+                initialFocus
+                className="p-3 pointer-events-auto"
+              />
+            </PopoverContent>
+          </Popover>
+        </div>
+
         {/* Commodity + Warehouse */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">
@@ -253,6 +305,25 @@ export default function NewOrder() {
           {saving ? "Salvando..." : "Salvar Ordem"}
         </Button>
       </div>
+
+      {/* AlertDialog for date change confirmation */}
+      <AlertDialog open={!!pendingDate} onOpenChange={(open) => { if (!open) setPendingDate(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Alterar data da operação?</AlertDialogTitle>
+            <AlertDialogDescription>
+              A data selecionada é diferente de hoje. Deseja registrar esta ordem com a data{" "}
+              <strong>{pendingDate ? format(pendingDate, "dd/MM/yyyy") : ""}</strong>?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { if (pendingDate) { setOperationDate(pendingDate); setPendingDate(null); } }}>
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
