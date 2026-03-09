@@ -1,4 +1,4 @@
-import { Wheat, Leaf } from "lucide-react";
+import { Wheat, Leaf, Clock } from "lucide-react";
 import { formatBRL } from "@/lib/formatters";
 import type { PricingResult } from "@/lib/pricing-index";
 
@@ -10,6 +10,7 @@ interface PriceTableProps {
   contratoMilho: string;
   b3Milho: number;
   onCellClick: (result: PricingResult) => void;
+  generatedAt?: string | null;
 }
 
 function pivotResults(
