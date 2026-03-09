@@ -80,6 +80,7 @@ function recordToRow(record: OrderRecord) {
     status: record.status,
     stonex_confirmation_text: record.stonexConfirmationText,
     stonex_confirmed_at: record.stonexConfirmedAt,
+    operation_date: record.operationDate,
     generated_at: record.generatedAt,
     generated_by_user_id: record.generatedByUserId,
     notes: record.notes,
