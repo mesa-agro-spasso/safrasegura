@@ -35,13 +35,22 @@ function pivotResults(
 }
 
 export default function PriceTable({
-  results, contratoSoja, cbotSoja, dolarStonex, contratoMilho, b3Milho, onCellClick,
+  results, contratoSoja, cbotSoja, dolarStonex, contratoMilho, b3Milho, onCellClick, generatedAt,
 }: PriceTableProps) {
   const soja = pivotResults(results, "soybean");
   const milho = pivotResults(results, "corn");
 
   return (
     <section className="space-y-4">
+      {generatedAt && (
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Clock className="h-3.5 w-3.5" />
+          <span>
+            Gerada em {new Date(generatedAt).toLocaleDateString("pt-BR")} às{" "}
+            {new Date(generatedAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+          </span>
+        </div>
+      )}
       {soja.cities.length > 0 && (
         <div className="rounded-xl border bg-card overflow-hidden">
           <div className="flex items-center gap-2 border-b px-5 py-3 bg-primary/5">
