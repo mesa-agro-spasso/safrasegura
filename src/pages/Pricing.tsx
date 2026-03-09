@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo } from "react";
 import MarketData from "@/components/MarketData";
 import type { MarketDataValues } from "@/components/MarketData";
 import PriceTable from "@/components/PriceTable";
@@ -15,13 +15,25 @@ import {
   formatDateISO,
   type PricingResult,
 } from "@/lib/pricing-index";
+import { usePersistentState } from "@/hooks/use-persistent-state";
+import { useState } from "react";
+import { AlertTriangle } from "lucide-react";
+
+const TEN_HOURS_MS = 10 * 60 * 60 * 1000;
 
 export default function Pricing() {
-  const [config, setConfig] = useState<ConfigState>(getDefaultConfig);
-  const [marketValues, setMarketValues] = useState<MarketDataValues | null>(null);
-  const [results, setResults] = useState<PricingResult[]>([]);
+  const [config, setConfig] = usePersistentState<ConfigState>("pricing_config", getDefaultConfig);
+  const [marketValues, setMarketValues] = usePersistentState<MarketDataValues | null>("pricing_market", null);
+  const [results, setResults] = usePersistentState<PricingResult[]>("pricing_results", []);
+  const [generatedAt, setGeneratedAt] = usePersistentState<string | null>("pricing_generated_at", null);
+
   const [selectedResult, setSelectedResult] = useState<PricingResult | null>(null);
   const [showOrder, setShowOrder] = useState(false);
+
+  const isExpired = useMemo(() => {
+    if (!generatedAt) return false;
+    return Date.now() - new Date(generatedAt).getTime() > TEN_HOURS_MS;
+  }, [generatedAt]);
 
   const handleGenerate = (values: MarketDataValues) => {
     setMarketValues(values);
@@ -56,6 +68,11 @@ export default function Pricing() {
     });
 
     setResults(pricingResults);
+    setGeneratedAt(new Date().toISOString());
+  };
+
+  const handleMarketChange = (values: MarketDataValues) => {
+    setMarketValues(values);
   };
 
   return (
@@ -67,19 +84,37 @@ export default function Pricing() {
         </p>
       </div>
 
-      <MarketData onGenerate={handleGenerate} />
+      <MarketData
+        onGenerate={handleGenerate}
+        initialValues={marketValues ?? undefined}
+        onChange={handleMarketChange}
+      />
       <ConfigPanel config={config} onChange={setConfig} />
 
       {results.length > 0 && marketValues && (
-        <PriceTable
-          results={results}
-          contratoSoja={marketValues.contratoSoja}
-          cbotSoja={marketValues.cbotSoja}
-          dolarStonex={marketValues.dolarStonex}
-          contratoMilho={marketValues.contratoMilho}
-          b3Milho={marketValues.b3Milho}
-          onCellClick={(r) => setSelectedResult(r)}
-        />
+        isExpired ? (
+          <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-center space-y-2">
+            <AlertTriangle className="h-8 w-8 text-destructive mx-auto" />
+            <p className="text-sm font-semibold text-destructive">Tabela expirada</p>
+            <p className="text-xs text-muted-foreground">
+              Gerada em{" "}
+              {new Date(generatedAt!).toLocaleDateString("pt-BR")} às{" "}
+              {new Date(generatedAt!).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+              . Gere uma nova tabela com dados atualizados.
+            </p>
+          </div>
+        ) : (
+          <PriceTable
+            results={results}
+            contratoSoja={marketValues.contratoSoja}
+            cbotSoja={marketValues.cbotSoja}
+            dolarStonex={marketValues.dolarStonex}
+            contratoMilho={marketValues.contratoMilho}
+            b3Milho={marketValues.b3Milho}
+            onCellClick={(r) => setSelectedResult(r)}
+            generatedAt={generatedAt}
+          />
+        )
       )}
 
       {selectedResult && !showOrder && (

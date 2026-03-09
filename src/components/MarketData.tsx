@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { TrendingUp, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,27 +29,37 @@ export interface MarketDataValues {
   dataVendaMilho: string;
 }
 
+const DEFAULT_VALUES: MarketDataValues = {
+  cbotSoja: 10.50,
+  contratoSoja: "ZSN26",
+  dataVendaSoja: "2026-06-30",
+  dolarSpot: 5.80,
+  dolarStonex: 0,
+  b3Milho: 75.00,
+  contratoMilho: "CCMU26",
+  dataVendaMilho: "2026-09-30",
+};
+
 interface MarketDataProps {
   onGenerate: (values: MarketDataValues) => void;
+  initialValues?: MarketDataValues;
+  onChange?: (values: MarketDataValues) => void;
 }
 
-export default function MarketData({ onGenerate }: MarketDataProps) {
-  const [values, setValues] = useState<MarketDataValues>({
-    cbotSoja: 10.50,
-    contratoSoja: "ZSN26",
-    dataVendaSoja: "2026-06-30",
-    dolarSpot: 5.80,
-    dolarStonex: 0,
-    b3Milho: 75.00,
-    contratoMilho: "CCMU26",
-    dataVendaMilho: "2026-09-30",
-  });
+export default function MarketData({ onGenerate, initialValues, onChange }: MarketDataProps) {
+  const [values, setValues] = useState<MarketDataValues>(initialValues ?? DEFAULT_VALUES);
 
   useEffect(() => {
     const today = formatDateISO(new Date());
     const dolarStonex = calculateStonexForwardDolRate(values.dolarSpot, values.dataVendaSoja, today);
-    setValues((prev) => ({ ...prev, dolarStonex }));
+    if (dolarStonex !== values.dolarStonex) {
+      setValues((prev) => ({ ...prev, dolarStonex }));
+    }
   }, [values.dolarSpot, values.dataVendaSoja]);
+
+  useEffect(() => {
+    onChange?.(values);
+  }, [values, onChange]);
 
   const update = (field: keyof MarketDataValues, val: string | number) => {
     setValues((prev) => ({ ...prev, [field]: val }));
