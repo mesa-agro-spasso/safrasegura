@@ -62,6 +62,7 @@ export interface OrderRecord {
   stonexConfirmationText: string | null;
   stonexConfirmedAt: string | null;
 
+  operationDate: string;
   generatedAt: string;
   generatedByUserId: string | null;
   notes: string | null;

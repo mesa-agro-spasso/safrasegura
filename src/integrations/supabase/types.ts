@@ -35,6 +35,7 @@ export type Database = {
           id: string
           legs: Json
           notes: string | null
+          operation_date: string
           operation_id: string | null
           order_message: string
           origination_price_gross_brl: number
@@ -75,6 +76,7 @@ export type Database = {
           id?: string
           legs?: Json
           notes?: string | null
+          operation_date?: string
           operation_id?: string | null
           order_message?: string
           origination_price_gross_brl: number
@@ -115,6 +117,7 @@ export type Database = {
           id?: string
           legs?: Json
           notes?: string | null
+          operation_date?: string
           operation_id?: string | null
           order_message?: string
           origination_price_gross_brl?: number
