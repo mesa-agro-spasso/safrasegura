@@ -37,6 +37,7 @@ function rowToRecord(row: any): OrderRecord {
     status: row.status,
     stonexConfirmationText: row.stonex_confirmation_text,
     stonexConfirmedAt: row.stonex_confirmed_at,
+    operationDate: row.operation_date ?? row.generated_at?.slice(0, 10) ?? new Date().toISOString().slice(0, 10),
     generatedAt: row.generated_at,
     generatedByUserId: row.generated_by_user_id,
     notes: row.notes,

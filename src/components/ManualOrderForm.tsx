@@ -169,6 +169,7 @@ export default function ManualOrderForm({ open, onClose, onSaved }: ManualOrderF
         status,
         stonexConfirmationText: null,
         stonexConfirmedAt: null,
+        operationDate: new Date().toISOString().slice(0, 10),
         generatedAt: new Date().toISOString(),
         generatedByUserId: null,
         notes: notes.trim() || "Cadastro manual",

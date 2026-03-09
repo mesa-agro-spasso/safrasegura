@@ -117,6 +117,7 @@ export default function OrderGenerator({
         status: "GENERATED",
         stonexConfirmationText: null,
         stonexConfirmedAt: null,
+        operationDate: new Date().toISOString().slice(0, 10),
         generatedAt: new Date().toISOString(),
         generatedByUserId: null,
         notes: null,
