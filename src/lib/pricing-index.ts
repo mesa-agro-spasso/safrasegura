@@ -101,3 +101,27 @@ export {
   type PricingResult,
 
 } from "./pricingTableRunner";
+
+export {
+
+  calculateBlack76Price,
+
+  calculatePremiumCarry,
+
+  calculateTotalInsuranceCost,
+
+  suggestStrikeFromOtmPct,
+
+  calculateInsurancePrices,
+
+  calculateMaxLoss,
+
+  calculateOptionBrokeragePerSack,
+
+  MAX_LOSS_UNLIMITED,
+
+  type InsuranceLevel,
+
+  type InsurancePrices,
+
+} from "./optionsUtils";
