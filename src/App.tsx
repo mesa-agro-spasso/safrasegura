@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import Pricing from "@/pages/Pricing";
 import Orders from "@/pages/Orders";
+import Combinations from "@/pages/Combinations";
 import NewOrder from "@/pages/NewOrder";
 import NotFound from "@/pages/NotFound";
 
