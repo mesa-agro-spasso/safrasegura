@@ -1,4 +1,4 @@
-import { BarChart3, ClipboardList, PlusCircle } from "lucide-react";
+import { BarChart3, ClipboardList, PlusCircle, Settings2 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import logo from "@/assets/logo.png";
@@ -16,6 +16,7 @@ import {
 
 const items = [
   { title: "Precificação", url: "/", icon: BarChart3 },
+  { title: "Combinações", url: "/combinacoes", icon: Settings2 },
   { title: "Ordens", url: "/ordens", icon: ClipboardList },
   { title: "Nova Ordem", url: "/nova-ordem", icon: PlusCircle },
 ];

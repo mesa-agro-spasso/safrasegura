@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import AppLayout from "@/components/AppLayout";
 import Pricing from "@/pages/Pricing";
 import Orders from "@/pages/Orders";
+import Combinations from "@/pages/Combinations";
 import NewOrder from "@/pages/NewOrder";
 import NotFound from "@/pages/NotFound";
 
@@ -20,6 +21,7 @@ const App = () => (
         <Routes>
           <Route element={<AppLayout />}>
             <Route path="/" element={<Pricing />} />
+            <Route path="/combinacoes" element={<Combinations />} />
             <Route path="/ordens" element={<Orders />} />
             <Route path="/nova-ordem" element={<NewOrder />} />
           </Route>
