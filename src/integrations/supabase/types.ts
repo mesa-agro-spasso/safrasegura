@@ -14,6 +14,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      insurance_profiles: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          level: number
+          manual_markup_brl: number
+          name: string
+          pricing_mode: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          level?: number
+          manual_markup_brl?: number
+          name: string
+          pricing_mode?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          level?: number
+          manual_markup_brl?: number
+          name?: string
+          pricing_mode?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           break_even_basis_brl: number
@@ -136,6 +169,108 @@ export type Database = {
           volume_sacks?: number
           volume_tons?: number
           warehouse_display_name?: string
+          warehouse_id?: string
+        }
+        Relationships: []
+      }
+      pricing_combinations: {
+        Row: {
+          additional_discount_brl: number
+          brokerage_per_contract: number
+          commodity: string
+          created_at: string
+          created_by: string | null
+          desk_cost_pct: number
+          display_name: string
+          exchange_rate: number | null
+          exp_date: string
+          futures_price: number
+          grain_reception_date: string | null
+          id: string
+          interest_rate: number
+          interest_rate_period: string
+          is_active: boolean
+          option_type: string
+          payment_date: string
+          reception_cost: number
+          risk_free_rate: number
+          rounding_increment: number
+          sale_date: string
+          shrinkage_rate_monthly: number
+          sigma: number
+          storage_cost: number
+          storage_cost_type: string
+          target_basis: number
+          ticker: string
+          trade_date_override: string | null
+          updated_at: string
+          updated_by: string | null
+          warehouse_id: string
+        }
+        Insert: {
+          additional_discount_brl?: number
+          brokerage_per_contract?: number
+          commodity: string
+          created_at?: string
+          created_by?: string | null
+          desk_cost_pct?: number
+          display_name: string
+          exchange_rate?: number | null
+          exp_date: string
+          futures_price: number
+          grain_reception_date?: string | null
+          id?: string
+          interest_rate?: number
+          interest_rate_period?: string
+          is_active?: boolean
+          option_type?: string
+          payment_date: string
+          reception_cost?: number
+          risk_free_rate?: number
+          rounding_increment?: number
+          sale_date: string
+          shrinkage_rate_monthly?: number
+          sigma?: number
+          storage_cost?: number
+          storage_cost_type?: string
+          target_basis?: number
+          ticker: string
+          trade_date_override?: string | null
+          updated_at?: string
+          updated_by?: string | null
+          warehouse_id: string
+        }
+        Update: {
+          additional_discount_brl?: number
+          brokerage_per_contract?: number
+          commodity?: string
+          created_at?: string
+          created_by?: string | null
+          desk_cost_pct?: number
+          display_name?: string
+          exchange_rate?: number | null
+          exp_date?: string
+          futures_price?: number
+          grain_reception_date?: string | null
+          id?: string
+          interest_rate?: number
+          interest_rate_period?: string
+          is_active?: boolean
+          option_type?: string
+          payment_date?: string
+          reception_cost?: number
+          risk_free_rate?: number
+          rounding_increment?: number
+          sale_date?: string
+          shrinkage_rate_monthly?: number
+          sigma?: number
+          storage_cost?: number
+          storage_cost_type?: string
+          target_basis?: number
+          ticker?: string
+          trade_date_override?: string | null
+          updated_at?: string
+          updated_by?: string | null
           warehouse_id?: string
         }
         Relationships: []
