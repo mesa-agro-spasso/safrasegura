@@ -21,6 +21,7 @@ const App = () => (
         <Routes>
           <Route element={<AppLayout />}>
             <Route path="/" element={<Pricing />} />
+            <Route path="/combinacoes" element={<Combinations />} />
             <Route path="/ordens" element={<Orders />} />
             <Route path="/nova-ordem" element={<NewOrder />} />
           </Route>
