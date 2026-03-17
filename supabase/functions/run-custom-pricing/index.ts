@@ -490,7 +490,7 @@ function runCustomPricingTable(
     // Futures price in BRL/sack for insurance
     let fBrl: number;
     if (commodity === "soybean") {
-      fBrl = convertUsdBushelToBrlSack(merged.futures_price, merged.exchange_rate);
+      fBrl = convertUsdBushelToBrlSack(merged.futures_price / 100, merged.exchange_rate);
     } else {
       fBrl = merged.futures_price;
     }
