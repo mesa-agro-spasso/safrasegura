@@ -446,8 +446,10 @@ function runCustomPricingTable(
     // Build market data
     let marketData: Record<string, any>;
     if (commodity === "soybean") {
+      // futures_price arrives in cents/bushel — convert to USD/bushel
+      const futuresUsdPerBushel = merged.futures_price / 100;
       marketData = {
-        cbot_futures_usd: merged.futures_price,
+        cbot_futures_usd: futuresUsdPerBushel,
         ticker: merged.ticker,
         exp_date: merged.exp_date,
         exchange_rate: merged.exchange_rate,
@@ -488,7 +490,7 @@ function runCustomPricingTable(
     // Futures price in BRL/sack for insurance
     let fBrl: number;
     if (commodity === "soybean") {
-      fBrl = convertUsdBushelToBrlSack(merged.futures_price, merged.exchange_rate);
+      fBrl = convertUsdBushelToBrlSack(merged.futures_price / 100, merged.exchange_rate);
     } else {
       fBrl = merged.futures_price;
     }
