@@ -57,7 +57,7 @@ export default function DailyTable() {
     <div className="space-y-6 p-4 md:p-6 max-w-7xl mx-auto">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Daily Table</h1>
+          <h1 className="text-xl font-bold text-foreground">Tabela de Preços</h1>
           <p className="text-sm text-muted-foreground">
             Tabela de precificação gerada a partir dos parâmetros configurados.
           </p>
