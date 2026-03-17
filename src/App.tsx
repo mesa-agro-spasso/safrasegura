@@ -8,6 +8,7 @@ import Pricing from "@/pages/Pricing";
 import Orders from "@/pages/Orders";
 import Combinations from "@/pages/Combinations";
 import NewOrder from "@/pages/NewOrder";
+import DailyTable from "@/pages/DailyTable";
 import NotFound from "@/pages/NotFound";
 
 const queryClient = new QueryClient();
