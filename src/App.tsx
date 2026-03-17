@@ -8,6 +8,7 @@ import Pricing from "@/pages/Pricing";
 import Orders from "@/pages/Orders";
 import Combinations from "@/pages/Combinations";
 import NewOrder from "@/pages/NewOrder";
+import Parameters from "@/pages/Parameters";
 import DailyTable from "@/pages/DailyTable";
 import NotFound from "@/pages/NotFound";
 
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="/combinacoes" element={<Combinations />} />
             <Route path="/ordens" element={<Orders />} />
             <Route path="/nova-ordem" element={<NewOrder />} />
+            <Route path="/parametros" element={<Parameters />} />
             <Route path="/daily-table" element={<DailyTable />} />
           </Route>
           <Route path="*" element={<NotFound />} />
