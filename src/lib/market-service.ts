@@ -58,7 +58,7 @@ export function convertCornCbotToBrlSack(priceUsdCents: number, exchangeRate: nu
 
 // ── Default B3 Tickers ───────────────────────────────────────────────────
 
-const B3_CONTRACT_MONTHS: Record<number, string> = { 1: "F", 3: "H", 5: "K", 7: "N", 9: "U", 11: "X" };
+const B3_CONTRACT_MONTHS: Record<number, string> = { 1: "F", 3: "H", 5: "K", 7: "N", 9: "U" };
 
 export function generateDefaultB3Tickers(quantity = 6): FuturesRow[] {
   const now = new Date();

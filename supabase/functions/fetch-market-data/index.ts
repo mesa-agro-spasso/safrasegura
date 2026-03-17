@@ -17,7 +17,7 @@ const MONTH_CODES: Record<string, string> = {
 };
 
 const SOYBEAN_CONTRACT_MONTHS: Record<number, string> = { 1: "F", 3: "H", 5: "K", 7: "N", 8: "Q", 9: "U", 11: "X" };
-const CORN_CONTRACT_MONTHS: Record<number, string> = { 1: "F", 3: "H", 5: "K", 7: "N", 9: "U", 11: "X" };
+const CORN_CONTRACT_MONTHS: Record<number, string> = { 3: "H", 5: "K", 7: "N", 9: "U", 12: "Z" };
 
 /** Convert internal ticker (e.g. ZSN25) to Yahoo Finance symbol (e.g. ZSN25.CBT) */
 function toYahooSymbol(ticker: string): string {

@@ -51,8 +51,8 @@ export function FuturesTable({ title, rows, onRowChange, showBrlColumn = false, 
                     step="0.01"
                     value={row.price ?? ""}
                     onChange={(e) => {
-                      onRowChange(i, "price", e.target.value === "" ? null : Number(e.target.value));
-                      onRowChange(i, "isManual", true);
+                      const newPrice = e.target.value === "" ? null : Number(e.target.value);
+                      onRowChange(i, "price", newPrice);
                     }}
                     className="h-7 text-xs font-mono w-full"
                   />
