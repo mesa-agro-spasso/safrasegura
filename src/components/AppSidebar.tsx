@@ -1,4 +1,4 @@
-import { BarChart3, ClipboardList, PlusCircle, Settings2 } from "lucide-react";
+import { BarChart3, ClipboardList, PlusCircle, Settings2, TableProperties } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation } from "react-router-dom";
 import logo from "@/assets/logo.png";
