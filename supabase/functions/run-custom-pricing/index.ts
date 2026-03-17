@@ -179,15 +179,17 @@ interface InsuranceLevel {
 function calculateInsurancePrices(
   fBrl: number,
   tradeDate: string | Date,
-  grainReceptionDate: string | Date,
+  expDate: string | Date,
+  carryEndDate: string | Date,
   r: number,
   sigma: number,
   interestRate: number,
   interestRatePeriod: "monthly" | "yearly",
   optionType: "call" | "put" = "call",
 ): Record<string, InsuranceLevel> {
-  const days = daysBetween(tradeDate, grainReceptionDate);
-  const T = days / 365.0;
+  // T for Black-76 = time from trade date to option expiry
+  const daysToExpiry = daysBetween(tradeDate, expDate);
+  const T = daysToExpiry / 365.0;
 
   const levels: Record<string, number> = { atm: 0.0, otm_5: 0.05, otm_10: 0.10 };
   const result: Record<string, InsuranceLevel> = {};
@@ -195,9 +197,10 @@ function calculateInsurancePrices(
   for (const [label, otmPct] of Object.entries(levels)) {
     const strike = suggestStrikeFromOtmPct(fBrl, otmPct, optionType);
     const premium = calculateBlack76Price(fBrl, strike, T, r, sigma, optionType);
+    // Carry cost of the premium from trade date to grain reception / payment
     const carry = calculateFinancialCost({
       startDate: tradeDate,
-      endDate: grainReceptionDate,
+      endDate: carryEndDate,
       interestRate,
       ratePeriod: interestRatePeriod,
       baseValue: premium,
@@ -441,7 +444,9 @@ function runCustomPricingTable(
     // Merge: defaults ← combination (combination wins)
     const merged = { ...COMMODITY_DEFAULTS[commodity], ...combo };
     const effectiveTradeDate = merged.trade_date ?? effectiveGlobalDate;
-    const grainReceptionDate = merged.grain_reception_date ?? merged.payment_date;
+    const grainReceptionDate = (merged.grain_reception_date && merged.grain_reception_date !== "")
+      ? merged.grain_reception_date
+      : merged.payment_date;
 
     // Build market data
     let marketData: Record<string, any>;
@@ -505,7 +510,8 @@ function runCustomPricingTable(
     const insurance = calculateInsurancePrices(
       fBrl,
       effectiveTradeDate,
-      grainReceptionDate,
+      merged.exp_date,        // option expiry → T for Black-76
+      grainReceptionDate,     // carry end date for premium financing
       merged.risk_free_rate,
       merged.sigma,
       interestRateDecimal,
