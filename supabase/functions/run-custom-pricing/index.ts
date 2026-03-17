@@ -441,7 +441,9 @@ function runCustomPricingTable(
     // Merge: defaults ← combination (combination wins)
     const merged = { ...COMMODITY_DEFAULTS[commodity], ...combo };
     const effectiveTradeDate = merged.trade_date ?? effectiveGlobalDate;
-    const grainReceptionDate = merged.grain_reception_date ?? merged.payment_date;
+    const grainReceptionDate = (merged.grain_reception_date && merged.grain_reception_date !== "")
+      ? merged.grain_reception_date
+      : merged.payment_date;
 
     // Build market data
     let marketData: Record<string, any>;
