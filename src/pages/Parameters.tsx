@@ -7,12 +7,15 @@ import { Button } from "@/components/ui/button";
 import { Save, Loader2, TableProperties } from "lucide-react";
 import {
   type GlobalParams,
+  type CombinationPayload,
+  buildCombinationPayloads,
   DEFAULT_SHARED,
   DEFAULT_SOYBEAN,
   DEFAULT_CORN,
 } from "@/lib/combination-builder";
 import { generateDefaultB3Tickers, type MarketData } from "@/lib/market-service";
-import { loadSavedParams, saveParams } from "@/lib/params-storage";
+import { loadSavedParams, saveParams, saveResults } from "@/lib/params-storage";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const INITIAL_MARKET: MarketData = {
@@ -37,6 +40,7 @@ export default function Parameters() {
   const [globalParams, setGlobalParams] = useState<GlobalParams>(INITIAL_GLOBALS);
   const [combinations, setCombinations] = useState<CombinationGridRow[]>([]);
   const [saving, setSaving] = useState(false);
+  const [generating, setGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [isDirty, setIsDirty] = useState(false);
   const { toast } = useToast();
@@ -94,9 +98,47 @@ export default function Parameters() {
     }
   };
 
-  const handleGenerate = () => {
-    // TODO: will trigger run-custom-pricing and navigate
-    navigate("/daily-table");
+  const handleGenerate = async () => {
+    if (combinations.length === 0) {
+      toast({ title: "Sem combinações", description: "Adicione ao menos uma combinação antes de gerar.", variant: "destructive" });
+      return;
+    }
+
+    setGenerating(true);
+    try {
+      // Save params first if dirty
+      if (isDirty) {
+        await saveParams({ market_data: marketData, global_params: globalParams, combinations });
+        setIsDirty(false);
+      }
+
+      // Build payloads using combination-builder
+      const payloads = buildCombinationPayloads(globalParams, combinations.map(c => ({
+        ...c,
+        exchange_rate: c.commodity === "soybean" ? (c.exchange_rate ?? marketData.usd_forward ?? undefined) : undefined,
+      })));
+
+      // Call edge function
+      const { data, error } = await supabase.functions.invoke("run-custom-pricing", {
+        body: { combinations: payloads },
+      });
+
+      if (error) throw new Error(error.message || "Erro ao chamar função de precificação");
+      if (data?.error) throw new Error(data.error);
+
+      const results = data?.results ?? [];
+
+      // Save results to DB
+      await saveResults(results);
+
+      toast({ title: "Tabela gerada!", description: `${results.length} combinação(ões) processada(s).` });
+      navigate("/daily-table");
+    } catch (err: any) {
+      console.error("Generate error:", err);
+      toast({ title: "Erro ao gerar tabela", description: err.message, variant: "destructive" });
+    } finally {
+      setGenerating(false);
+    }
   };
 
   if (loading) {
@@ -127,9 +169,9 @@ export default function Parameters() {
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
             Salvar
           </Button>
-          <Button onClick={handleGenerate} className="gap-2">
-            <TableProperties className="h-4 w-4" />
-            Gerar Tabela
+          <Button onClick={handleGenerate} disabled={generating} className="gap-2">
+            {generating ? <Loader2 className="h-4 w-4 animate-spin" /> : <TableProperties className="h-4 w-4" />}
+            {generating ? "Gerando…" : "Gerar Tabela"}
           </Button>
         </div>
       </div>

@@ -2,3 +2,6 @@ project_id = "hequcfdgnccvosjbuuld"
 
 [functions.fetch-market-data]
 verify_jwt = false
+
+[functions.run-custom-pricing]
+verify_jwt = false
