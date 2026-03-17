@@ -89,22 +89,33 @@ interface YahooQuote {
 }
 
 async function fetchYahooQuotes(symbols: string[]): Promise<YahooQuote[]> {
-  const symbolStr = symbols.join(",");
-  const url = `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${encodeURIComponent(symbolStr)}&fields=regularMarketPrice,shortName`;
+  const results: YahooQuote[] = [];
 
-  const res = await fetch(url, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
-    },
+  // Use v8 chart endpoint (no auth required) — fetch each symbol individually
+  const fetches = symbols.map(async (symbol) => {
+    try {
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?range=1d&interval=1d`;
+      const res = await fetch(url, {
+        headers: {
+          "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+        },
+      });
+      if (!res.ok) {
+        const text = await res.text();
+        console.warn(`Yahoo chart error for ${symbol}: ${res.status} ${text.slice(0, 100)}`);
+        return { symbol, regularMarketPrice: undefined };
+      }
+      const data = await res.json();
+      const meta = data?.chart?.result?.[0]?.meta;
+      const price = meta?.regularMarketPrice ?? undefined;
+      return { symbol, regularMarketPrice: price };
+    } catch (e) {
+      console.warn(`Failed to fetch ${symbol}:`, e);
+      return { symbol, regularMarketPrice: undefined };
+    }
   });
 
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`Yahoo Finance API error ${res.status}: ${text.slice(0, 200)}`);
-  }
-
-  const data = await res.json();
-  return data?.quoteResponse?.result ?? [];
+  return Promise.all(fetches);
 }
 
 // ── Handler ──────────────────────────────────────────────────────────────
