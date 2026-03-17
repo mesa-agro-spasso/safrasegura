@@ -97,7 +97,7 @@ export function MarketSection({ marketData, onMarketDataChange }: MarketSectionP
     value: any,
   ) => {
     const rows = [...marketData[commodity]];
-    rows[index] = { ...rows[index], [field]: value };
+    rows[index] = { ...rows[index], [field]: value, ...(field === "price" ? { isManual: true } : {}) };
 
     // Recalculate BRL/sc if price changed (for CBOT tables)
     if (field === "price" && commodity !== "corn_b3" && marketData.usd_forward != null) {
