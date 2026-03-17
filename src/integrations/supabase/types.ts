@@ -21,6 +21,7 @@ export type Database = {
           global_params: Json
           id: string
           market_data: Json
+          results: Json
           saved_at: string
         }
         Insert: {
@@ -29,6 +30,7 @@ export type Database = {
           global_params?: Json
           id?: string
           market_data?: Json
+          results?: Json
           saved_at?: string
         }
         Update: {
@@ -37,6 +39,7 @@ export type Database = {
           global_params?: Json
           id?: string
           market_data?: Json
+          results?: Json
           saved_at?: string
         }
         Relationships: []
