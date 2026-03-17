@@ -510,7 +510,8 @@ function runCustomPricingTable(
     const insurance = calculateInsurancePrices(
       fBrl,
       effectiveTradeDate,
-      grainReceptionDate,
+      merged.exp_date,        // option expiry → T for Black-76
+      grainReceptionDate,     // carry end date for premium financing
       merged.risk_free_rate,
       merged.sigma,
       interestRateDecimal,
