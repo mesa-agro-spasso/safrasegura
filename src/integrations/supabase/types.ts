@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      daily_table_params: {
+        Row: {
+          combinations: Json
+          generated_at: string | null
+          global_params: Json
+          id: string
+          market_data: Json
+          saved_at: string
+        }
+        Insert: {
+          combinations?: Json
+          generated_at?: string | null
+          global_params?: Json
+          id?: string
+          market_data?: Json
+          saved_at?: string
+        }
+        Update: {
+          combinations?: Json
+          generated_at?: string | null
+          global_params?: Json
+          id?: string
+          market_data?: Json
+          saved_at?: string
+        }
+        Relationships: []
+      }
       insurance_profiles: {
         Row: {
           created_at: string
