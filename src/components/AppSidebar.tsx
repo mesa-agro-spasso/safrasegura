@@ -16,6 +16,7 @@ import {
 
 const items = [
   { title: "Precificação", url: "/", icon: BarChart3 },
+  { title: "Daily Table", url: "/daily-table", icon: TableProperties },
   { title: "Combinações", url: "/combinacoes", icon: Settings2 },
   { title: "Ordens", url: "/ordens", icon: ClipboardList },
   { title: "Nova Ordem", url: "/nova-ordem", icon: PlusCircle },
