@@ -132,7 +132,7 @@ export default function Parameters() {
       await saveResults(results);
 
       toast({ title: "Tabela gerada!", description: `${results.length} combinação(ões) processada(s).` });
-      navigate("/daily-table");
+      navigate("/tabela-precos");
     } catch (err: any) {
       console.error("Generate error:", err);
       toast({ title: "Erro ao gerar tabela", description: err.message, variant: "destructive" });

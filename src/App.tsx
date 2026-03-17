@@ -27,7 +27,7 @@ const App = () => (
             <Route path="/ordens" element={<Orders />} />
             <Route path="/nova-ordem" element={<NewOrder />} />
             <Route path="/parametros" element={<Parameters />} />
-            <Route path="/daily-table" element={<DailyTable />} />
+            <Route path="/tabela-precos" element={<DailyTable />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
