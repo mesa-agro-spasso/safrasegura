@@ -11,6 +11,7 @@ export interface SavedParams {
   market_data: MarketData;
   global_params: GlobalParams;
   combinations: CombinationGridRow[];
+  results: any[];
   saved_at: string | null;
   generated_at: string | null;
 }
@@ -30,6 +31,7 @@ export async function loadSavedParams(): Promise<SavedParams | null> {
     market_data: (data.market_data as any) ?? null,
     global_params: (data.global_params as any) ?? null,
     combinations: ((data.combinations as any) ?? []) as CombinationGridRow[],
+    results: ((data as any).results ?? []) as any[],
     saved_at: data.saved_at,
     generated_at: data.generated_at,
   };
@@ -48,6 +50,18 @@ export async function saveParams(params: {
       combinations: params.combinations as any,
       saved_at: new Date().toISOString(),
     })
+    .eq("id", ROW_ID);
+
+  if (error) throw new Error(error.message);
+}
+
+export async function saveResults(results: any[]): Promise<void> {
+  const { error } = await supabase
+    .from("daily_table_params")
+    .update({
+      results: results as any,
+      generated_at: new Date().toISOString(),
+    } as any)
     .eq("id", ROW_ID);
 
   if (error) throw new Error(error.message);

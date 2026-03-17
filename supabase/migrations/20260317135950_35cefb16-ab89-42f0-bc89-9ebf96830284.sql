@@ -1,0 +1,1 @@
+ALTER TABLE public.daily_table_params ADD COLUMN results jsonb NOT NULL DEFAULT '[]'::jsonb;
