@@ -276,7 +276,7 @@ export function CombinationsGrid({ combinations, onChange, marketData, globalPar
                           step="0.01"
                           value={row.futures_price || ""}
                           onChange={(e) => updateRow(row.id, "futures_price", Number(e.target.value))}
-                          className="h-7 text-xs font-mono w-20"
+                          className="h-7 text-xs font-mono w-28 min-w-28"
                         />
                       </TableCell>
                       <TableCell>
