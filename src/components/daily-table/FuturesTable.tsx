@@ -15,7 +15,7 @@ export function FuturesTable({ title, rows, onRowChange, showBrlColumn = false, 
   return (
     <div className="space-y-2">
       <h4 className="text-sm font-semibold text-foreground">{title}</h4>
-      <div className="rounded-lg border border-border overflow-hidden">
+      <div className="rounded-lg border border-border overflow-x-auto">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/50">
