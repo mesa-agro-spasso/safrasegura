@@ -194,15 +194,15 @@ export function CombinationsGrid({ combinations, onChange, marketData, globalPar
         </CardHeader>
         <CardContent>
           <div className="rounded-lg border border-border overflow-x-auto">
-            <Table>
+            <Table className="min-w-[1040px]">
               <TableHeader>
                 <TableRow className="bg-muted/50">
                   <TableHead className="w-8" />
-                  <TableHead className="w-24">Commodity</TableHead>
-                  <TableHead className="w-32">Praça</TableHead>
-                  <TableHead className="w-28">Ticker</TableHead>
-                  <TableHead className="w-24">Preço Fut.</TableHead>
-                  <TableHead className="w-28">Vencimento</TableHead>
+                  <TableHead className="w-24 whitespace-nowrap">Commodity</TableHead>
+                  <TableHead className="w-32 whitespace-nowrap">Praça</TableHead>
+                  <TableHead className="w-28 whitespace-nowrap">Ticker</TableHead>
+                  <TableHead className="w-32 whitespace-nowrap">Preço Fut.</TableHead>
+                  <TableHead className="w-28 whitespace-nowrap">Vencimento</TableHead>
                   <TableHead className="w-28">Pagamento</TableHead>
                   <TableHead className="w-28">Venda</TableHead>
                   <TableHead className="w-20">Basis</TableHead>
@@ -276,7 +276,7 @@ export function CombinationsGrid({ combinations, onChange, marketData, globalPar
                           step="0.01"
                           value={row.futures_price || ""}
                           onChange={(e) => updateRow(row.id, "futures_price", Number(e.target.value))}
-                          className="h-7 text-xs font-mono w-20"
+                          className="h-7 text-xs font-mono w-28 min-w-28"
                         />
                       </TableCell>
                       <TableCell>
