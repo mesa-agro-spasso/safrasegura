@@ -16,14 +16,14 @@ export function FuturesTable({ title, rows, onRowChange, showBrlColumn = false, 
     <div className="space-y-2">
       <h4 className="text-sm font-semibold text-foreground">{title}</h4>
       <div className="rounded-lg border border-border overflow-x-auto">
-        <Table className={showBrlColumn ? "min-w-[650px]" : "min-w-[520px]"}>
+        <Table className={showBrlColumn ? "min-w-[720px]" : "min-w-[560px]"}>
           <TableHeader>
             <TableRow className="bg-muted/50">
               <TableHead className="w-16 whitespace-nowrap">Ticker</TableHead>
               <TableHead className="w-28">Vencimento</TableHead>
-              <TableHead className="w-32 whitespace-nowrap">{currencyLabel}</TableHead>
+              <TableHead className="w-36 whitespace-nowrap">{currencyLabel}</TableHead>
               {showBrlColumn && <TableHead className="w-28 text-right whitespace-nowrap">BRL/sc</TableHead>}
-              <TableHead className="w-14">Status</TableHead>
+              <TableHead className="w-16">Status</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
